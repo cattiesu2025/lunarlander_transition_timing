@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
+import yaml
 
 from experiments.lunar_lander_braking.config import (
     file_hash,
@@ -47,3 +48,16 @@ def test_freeze_bundle_refuses_overwrite(tmp_path):
     output.mkdir()
     with pytest.raises(FileExistsError):
         write_freeze_bundle(CONFIG, [], output)
+
+
+@pytest.mark.parametrize("time_scale", [None, 0, -1])
+def test_config_requires_positive_time_scale(tmp_path, time_scale):
+    config = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+    if time_scale is None:
+        config["reward"].pop("time_scale")
+    else:
+        config["reward"]["time_scale"] = time_scale
+    path = tmp_path / "config.yaml"
+    path.write_text(yaml.safe_dump(config), encoding="utf-8")
+    with pytest.raises(ValueError, match=r"reward\.time_scale must be a positive number"):
+        load_config(path)

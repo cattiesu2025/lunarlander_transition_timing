@@ -1,4 +1,4 @@
-# Frozen Protocol — candidate v0
+# Frozen Protocol — candidate v1
 
 Status: **pilot candidate, not confirmation-ready**. Run `freeze` only after fixed-action calibration and pilot task-quality review. The resulting bundle and checksums define a formal run; editing this file does not alter an already frozen bundle.
 
@@ -12,7 +12,7 @@ Status: **pilot candidate, not confirmation-ready**. Run `freeze` only after fix
 
 ## Reward
 
-Common shaping removes the native velocity term and main-engine charge. It retains position, attitude, leg-contact changes, side-engine cost, and native `+100/-100` terminal rewards. Replacement downward-speed-squared and main-engine-use costs are integrated per simulated second. The weights and scales are in the frozen YAML; native return is diagnostic only.
+Common shaping removes the native velocity term and main-engine charge. It retains position, attitude, leg-contact changes, side-engine cost, and native `+100/-100` terminal rewards. It also applies a common `time_scale=5.0` reward-units/s penalty: `-0.1` per 0.02 s step and `-100` over the 1000-step horizon. Replacement downward-speed-squared and main-engine-use costs are integrated per simulated second. The time term is identical across conditions; only the declared downward-speed/main-engine weights differ. The weights and scales are in the frozen YAML; native return is diagnostic only.
 
 ## Endpoints
 
@@ -23,7 +23,7 @@ Auxiliary endpoints are first main-engine firing and firing-fraction-only sustai
 ## Training and evaluation
 
 - Reference-controller screening landed all 18/18 development and 18/18 held-out scenarios, with 18/18 non-immediate primary events in each grid. This is a recoverability check, not an optimality proof.
-- Pilot: seeds 101/202/303, each condition 500,000 steps.
+- Pilot v1: seeds 101/202/303, each condition 500,000 steps. Pilot v0 failed the all-condition task-quality gate because timeout policies were not charged the planned common time term.
 - Formal: seeds 1001–1020, each condition 500,000 steps; final checkpoint only.
 - Evaluation: all 18 held-out scenes, original and `|vy| × 0.5` intervention.
 - A successful sleep termination is `landed`; body contact/game-over is `crash`; horizontal state beyond bounds is `out_of_bounds`; TimeLimit is `timeout`.

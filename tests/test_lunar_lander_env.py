@@ -4,7 +4,7 @@ import pytest
 pytest.importorskip("Box2D")
 
 from experiments.lunar_lander_braking.config import load_config, load_manifest
-from experiments.lunar_lander_braking.env import Scenario, make_env
+from experiments.lunar_lander_braking.env import DT, Scenario, make_env
 
 
 CONFIG = "experiments/lunar_lander_braking/configs/pilot.yaml"
@@ -37,7 +37,26 @@ def test_reward_difference_is_only_declared_replacement_weights():
     _, _, _, _, econ = env_econ.step(2)
     assert desc["reward_components"]["common"] == pytest.approx(econ["reward_components"]["common"])
     assert desc["reward_components"]["side_engine"] == econ["reward_components"]["side_engine"]
+    assert desc["reward_components"]["time"] == pytest.approx(-config["reward"]["time_scale"] * DT)
+    assert desc["reward_components"]["time"] == econ["reward_components"]["time"]
     assert desc["reward_components"]["downward_speed"] != econ["reward_components"]["downward_speed"]
     assert desc["reward_components"]["main_engine"] != econ["reward_components"]["main_engine"]
+    for result in (desc, econ):
+        components = result["reward_components"]
+        assert components["total"] == pytest.approx(
+            components["common"]
+            + components["side_engine"]
+            + components["downward_speed"]
+            + components["main_engine"]
+            + components["time"]
+        )
     env_desc.close()
     env_econ.close()
+
+
+def test_time_penalty_matches_failure_scale_at_timeout_horizon():
+    config = load_config(CONFIG)
+    reward = config["reward"]
+    horizon = config["experiment"]["max_episode_steps"]
+    assert reward["time_scale"] * DT == pytest.approx(0.1)
+    assert reward["time_scale"] * DT * horizon == pytest.approx(100.0)

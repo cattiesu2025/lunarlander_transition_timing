@@ -56,6 +56,13 @@ def load_config(path: str | Path) -> dict[str, Any]:
     conditions = config["reward"].get("conditions", {})
     if set(conditions) != {"DESC", "BAL", "ECON"}:
         raise ValueError("Reward conditions must be exactly DESC, BAL, and ECON")
+    for field in ("downward_reference_speed", "downward_scale", "main_engine_scale", "time_scale"):
+        try:
+            value = float(config["reward"][field])
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError(f"reward.{field} must be a positive number") from error
+        if value <= 0:
+            raise ValueError(f"reward.{field} must be a positive number")
     if int(config["experiment"].get("action_repeat", 1)) != 1:
         raise ValueError("Protocol v1 requires action_repeat=1")
     return config

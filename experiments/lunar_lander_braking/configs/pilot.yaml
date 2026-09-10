@@ -1,5 +1,5 @@
 experiment:
-  name: lunar_lander_braking_pilot_v0
+  name: lunar_lander_braking_pilot_v1
   phase: pilot
   seeds: [101, 202, 303]
   train_steps: 500000
@@ -19,6 +19,7 @@ reward:
   downward_reference_speed: 2.0
   downward_scale: 10.0
   main_engine_scale: 10.0
+  time_scale: 5.0
   conditions:
     DESC: {downward_speed: 1.0, main_engine: 0.25}
     BAL: {downward_speed: 0.625, main_engine: 0.625}
