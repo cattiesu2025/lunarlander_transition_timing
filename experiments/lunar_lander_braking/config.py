@@ -71,6 +71,13 @@ def load_config(path: str | Path) -> dict[str, Any]:
             raise ValueError(f"reward.{field} must be a positive number")
     if int(config["experiment"].get("action_repeat", 1)) != 1:
         raise ValueError("Protocol v1 requires action_repeat=1")
+    agent = config["agent"]
+    if agent.get("framework") != "stable_baselines3":
+        raise ValueError("agent.framework must be stable_baselines3")
+    if agent.get("algorithm") != "double_dqn_train_override":
+        raise ValueError("agent.algorithm must be double_dqn_train_override")
+    if int(agent.get("gradient_steps", 0)) <= 0:
+        raise ValueError("agent.gradient_steps must be a positive integer")
     return config
 
 

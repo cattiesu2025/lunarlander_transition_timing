@@ -74,3 +74,10 @@ def test_config_requires_positive_settling_actuation_scale(tmp_path, settling_sc
     path.write_text(yaml.safe_dump(config), encoding="utf-8")
     with pytest.raises(ValueError, match=r"reward\.settling_actuation_scale must be a positive number"):
         load_config(path)
+
+
+def test_config_declares_sb3_double_dqn_override():
+    config = load_config(CONFIG)
+    assert config["agent"]["framework"] == "stable_baselines3"
+    assert config["agent"]["algorithm"] == "double_dqn_train_override"
+    assert config["agent"]["gradient_steps"] == 1

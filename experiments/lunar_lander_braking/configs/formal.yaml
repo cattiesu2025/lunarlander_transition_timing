@@ -29,6 +29,8 @@ detector:
   primary: {window_s: 0.30, firing_fraction: 0.60, epsilon_v: 0.40}
   sensitivity_windows_s: [0.20, 0.40]
 agent:
+  framework: stable_baselines3
+  algorithm: double_dqn_train_override
   hidden_sizes: [256, 256]
   learning_rate: 0.0003
   gamma: 0.99
@@ -36,7 +38,8 @@ agent:
   replay_capacity: 200000
   learning_starts: 5000
   train_frequency: 4
-  target_update_interval: 2000
+  gradient_steps: 1
+  target_update_interval: 8000
   gradient_clip: 10.0
   epsilon_start: 1.0
   epsilon_end: 0.05

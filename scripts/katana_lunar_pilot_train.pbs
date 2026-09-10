@@ -13,7 +13,7 @@ conditions=(DESC BAL ECON)
 seeds=(101 202 303)
 condition="${conditions[$((PBS_ARRAY_INDEX / 3))]}"
 seed="${seeds[$((PBS_ARRAY_INDEX % 3))]}"
-output="outputs/lunar_lander_braking_pilot_v2/train/${condition}/seed_${seed}"
+output="outputs/lunar_lander_braking_pilot_v3/train/${condition}/seed_${seed}"
 
 python -m experiments.lunar_lander_braking.run train \
   --config experiments/lunar_lander_braking/configs/pilot.yaml \

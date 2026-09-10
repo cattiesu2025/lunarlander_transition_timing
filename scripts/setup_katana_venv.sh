@@ -13,6 +13,6 @@ python -m pip install --upgrade pip setuptools wheel
 python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
 python -m pip install -r requirements.txt
 python -m pip check
-python -c 'import Box2D, gymnasium, torch; print("Box2D", Box2D.__version__); print("Gymnasium", gymnasium.__version__); print("PyTorch", torch.__version__)'
+python -c 'import Box2D, gymnasium, stable_baselines3, torch; print("Box2D", Box2D.__version__); print("Gymnasium", gymnasium.__version__); print("Stable-Baselines3", stable_baselines3.__version__); print("PyTorch", torch.__version__)'
 
 echo "Katana environment ready: $venv_dir"

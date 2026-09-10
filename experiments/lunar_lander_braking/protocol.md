@@ -1,4 +1,4 @@
-# Frozen Protocol — candidate v2
+# Frozen Protocol — candidate v3
 
 Status: **pilot candidate, not confirmation-ready**. Run `freeze` only after fixed-action calibration and pilot task-quality review. The resulting bundle and checksums define a formal run; editing this file does not alter an already frozen bundle.
 
@@ -23,7 +23,7 @@ Auxiliary endpoints are first main-engine firing and firing-fraction-only sustai
 ## Training and evaluation
 
 - Reference-controller screening landed all 18/18 development and 18/18 held-out scenarios, with 18/18 non-immediate primary events in each grid. This is a recoverability check, not an optimality proof.
-- Pilot v2: seeds 101/202/303, each condition 500,000 steps. Pilot v0 failed the all-condition task-quality gate because timeout policies were not charged the planned common time term; v1 improved DESC/ECON aggregate landing but exposed post-contact actuation loops in BAL and ECON seeds.
+- Pilot v3: seeds 101/202/303, each condition 500,000 steps. Training uses Double DQN implemented by inheriting Stable-Baselines3 `DQN` and overriding `train()` so the online network selects the next action and the target network evaluates it. Pilot v0 failed the all-condition task-quality gate because timeout policies were not charged the planned common time term; v1 improved DESC/ECON aggregate landing but exposed post-contact actuation loops; v2 fixed most BAL settling failures but ECON did not learn the task reliably.
 - Formal: seeds 1001–1020, each condition 500,000 steps; final checkpoint only.
 - Evaluation: all 18 held-out scenes, original and `|vy| × 0.5` intervention.
 - A successful sleep termination is `landed`; body contact/game-over is `crash`; horizontal state beyond bounds is `out_of_bounds`; TimeLimit is `timeout`.

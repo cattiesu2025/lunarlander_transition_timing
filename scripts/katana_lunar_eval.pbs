@@ -21,5 +21,5 @@ python -m experiments.lunar_lander_braking.run evaluate \
   --manifest experiments/lunar_lander_braking/grids/held_out.json \
   --freeze-manifest "$root/frozen/manifest.sha256.json" \
   --condition "$condition" --seed "$seed" \
-  --checkpoint "$root/train/$condition/seed_${seed}/final.pt" \
+  --checkpoint "$root/train/$condition/seed_${seed}/final.zip" \
   --output "$root/eval/$condition/seed_${seed}"

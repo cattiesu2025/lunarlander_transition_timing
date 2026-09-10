@@ -1,4 +1,5 @@
 gymnasium[box2d]
+stable-baselines3==2.9.0
 numpy
 PyYAML
 pandas

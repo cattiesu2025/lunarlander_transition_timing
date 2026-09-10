@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from typing import Any, Callable
 
-from .agent import DoubleDQNAgent, train_condition
+from .agent import DoubleDQN, train_condition
 from .config import canonical_hash, file_hash, load_config, load_manifest, write_freeze_bundle
 from .env import Scenario, make_env, rollout
 from .events import DetectorConfig, detect_first_fire, detect_onset, detect_sustained_fire
@@ -97,13 +97,18 @@ def _evaluate_rollout(
     checkpoint_hash = file_hash(checkpoint)
     if external_metadata.get("checkpoint_sha256") != checkpoint_hash:
         raise ValueError("Checkpoint SHA-256 mismatch")
-    agent, metadata = DoubleDQNAgent.load(checkpoint)
+    metadata = external_metadata
     if metadata["condition"] != condition or int(metadata["seed"]) != seed:
         raise ValueError("Checkpoint metadata does not match requested condition/seed")
     if metadata["config_hash"] != canonical_hash(config):
         raise ValueError("Checkpoint/config hash mismatch")
+    agent = DoubleDQN.load(checkpoint, device="cpu")
     env = make_env(config, condition)
-    result = rollout(env, scenario, lambda obs: agent.act(obs, greedy=True))
+    result = rollout(
+        env,
+        scenario,
+        lambda obs: int(agent.predict(obs, deterministic=True)[0]),
+    )
     env.close()
     configs = detector_configs(config)
     primary = detect_onset(result["records"], configs["primary"])
