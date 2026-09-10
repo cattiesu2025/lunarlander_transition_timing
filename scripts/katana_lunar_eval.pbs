@@ -7,8 +7,8 @@
 
 set -euo pipefail
 cd "${PBS_O_WORKDIR:?PBS_O_WORKDIR is required}"
-source /opt/anaconda3/etc/profile.d/conda.sh
-conda activate "${LUNAR_CONDA_ENV:-lunar-lander}"
+module load "${PYTHON_MODULE:-python/3.10.8}"
+source "${LUNAR_VENV_DIR:-/srv/scratch/$USER/environments/lunar-lander}/bin/activate"
 
 conditions=(DESC BAL ECON)
 condition_index=$((PBS_ARRAY_INDEX / 20))

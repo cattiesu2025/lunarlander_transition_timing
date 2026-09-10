@@ -17,6 +17,39 @@ conda list -n lunar-lander --explicit > outputs/lunar_lander_braking_v1/locks/co
 conda run -n lunar-lander python -m pip freeze > outputs/lunar_lander_braking_v1/locks/pip-freeze.txt
 ```
 
+### Katana（推荐）
+
+Katana 没有默认的 `conda` 命令。先从登录节点申请交互计算节点：
+
+```bash
+qsub -I -l select=1:ncpus=4:mem=16gb,walltime=2:00:00
+```
+
+作业启动、主机名从 `kdm` 变为计算节点后，进入项目并创建 venv：
+
+```bash
+cd ~/projects/lunarlander_transition_timing
+module avail python
+PYTHON_MODULE=python/3.10.8 bash scripts/setup_katana_venv.sh
+```
+
+默认环境位于 `/srv/scratch/$USER/environments/lunar-lander`。如果 `module avail python` 显示了更新版本，可通过 `PYTHON_MODULE=python/<version>` 指定；提交 PBS 时使用相同变量。安装脚本使用 PyTorch 官方 CPU wheel，因为本实验的主要瓶颈是单进程 Box2D 仿真，并不需要 GPU。
+
+环境安装完成后先做快速验证：
+
+```bash
+source /srv/scratch/$USER/environments/lunar-lander/bin/activate
+pytest -q
+```
+
+正式 freeze 前，在同一个 Katana venv 中记录环境：
+
+```bash
+mkdir -p outputs/lunar_lander_braking_v1/locks
+python --version > outputs/lunar_lander_braking_v1/locks/python-version.txt
+python -m pip freeze > outputs/lunar_lander_braking_v1/locks/pip-freeze.txt
+```
+
 ## Fast validation
 
 ```bash
@@ -58,6 +91,12 @@ python scripts/aggregate_lunar_lander.py \
 
 聚合器对 `phase: pilot` 永远不产生确认性 L1 结果，只输出任务质量、事件语义和完整性诊断。
 
+若安装时选择的不是默认 Python module 或 venv 路径，请这样传给作业：
+
+```bash
+qsub -v PYTHON_MODULE=python/3.10.8,LUNAR_VENV_DIR=/srv/scratch/$USER/environments/lunar-lander scripts/katana_lunar_pilot_train.pbs
+```
+
 ## Freeze and formal run
 
 校准和 pilot 审查完成后才可明确确认 freeze：
@@ -68,13 +107,13 @@ python -m experiments.lunar_lander_braking.run freeze \
   --development-manifest experiments/lunar_lander_braking/grids/development.json \
   --held-out-manifest experiments/lunar_lander_braking/grids/held_out.json \
   --output outputs/lunar_lander_braking_v1/frozen \
-  --conda-lock outputs/lunar_lander_braking_v1/locks/conda-explicit.txt \
+  --python-lock outputs/lunar_lander_braking_v1/locks/python-version.txt \
   --pip-lock outputs/lunar_lander_braking_v1/locks/pip-freeze.txt \
   --confirm-calibrated
 qsub scripts/katana_lunar_train.pbs
 ```
 
-训练数组完成且 60 个 final checkpoint/hash 均齐全后，再提交 `qsub scripts/katana_lunar_eval.pbs`。PBS 数组各有 60 个任务，映射 `3 conditions × 20 seeds`。提交前按 Katana 当前安装修改资源行与 Conda 初始化路径；可用 `LUNAR_CONDA_ENV` 指定环境。
+训练数组完成且 60 个 final checkpoint/hash 均齐全后，再提交 `qsub scripts/katana_lunar_eval.pbs`。PBS 数组各有 60 个任务，映射 `3 conditions × 20 seeds`。默认加载 `python/3.10.8` 并激活 scratch 中的 venv；可用 `PYTHON_MODULE` 和 `LUNAR_VENV_DIR` 覆盖。
 
 Formal 的 train/evaluate 命令必须提供 `--freeze-manifest`；PBS 已指向冻结目录。任何配置或 held-out manifest 哈希不匹配都会在运行前失败。评估中的 episode 级异常会写成 `technical_error` 后让 PBS task 返回失败，便于同配置重试。
 

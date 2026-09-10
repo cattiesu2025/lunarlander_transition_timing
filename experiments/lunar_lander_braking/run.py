@@ -52,13 +52,17 @@ def command_freeze(args: argparse.Namespace) -> None:
     formal = config["experiment"]["phase"] == "formal"
     if formal and not args.confirm_calibrated:
         raise SystemExit("Formal freeze requires --confirm-calibrated after documented probe/pilot review")
-    if formal and (not args.conda_lock or not args.pip_lock):
-        raise SystemExit("Formal freeze requires --conda-lock and --pip-lock from the execution environment")
+    if formal and (not args.pip_lock or not (args.conda_lock or args.python_lock)):
+        raise SystemExit(
+            "Formal freeze requires --pip-lock and either --conda-lock or --python-lock"
+        )
     inputs = [args.development_manifest, args.held_out_manifest, PACKAGE / "protocol.md"]
     project_root = PACKAGE.parents[1]
     inputs.extend((project_root / "environment.yml", project_root / "requirements.txt"))
     if args.conda_lock:
         inputs.append(args.conda_lock)
+    if args.python_lock:
+        inputs.append(args.python_lock)
     if args.pip_lock:
         inputs.append(args.pip_lock)
     bundle = write_freeze_bundle(
@@ -318,6 +322,7 @@ def build_parser() -> argparse.ArgumentParser:
     freeze.add_argument("--output", required=True)
     freeze.add_argument("--confirm-calibrated", action="store_true")
     freeze.add_argument("--conda-lock", help="Output of `conda list --explicit`")
+    freeze.add_argument("--python-lock", help="Python module/version record for a venv")
     freeze.add_argument("--pip-lock", help="Output of `python -m pip freeze`")
     freeze.set_defaults(func=command_freeze)
     train = sub.add_parser("train")
