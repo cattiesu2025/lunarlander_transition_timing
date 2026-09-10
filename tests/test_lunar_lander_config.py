@@ -61,3 +61,16 @@ def test_config_requires_positive_time_scale(tmp_path, time_scale):
     path.write_text(yaml.safe_dump(config), encoding="utf-8")
     with pytest.raises(ValueError, match=r"reward\.time_scale must be a positive number"):
         load_config(path)
+
+
+@pytest.mark.parametrize("settling_scale", [None, 0, -1])
+def test_config_requires_positive_settling_actuation_scale(tmp_path, settling_scale):
+    config = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+    if settling_scale is None:
+        config["reward"].pop("settling_actuation_scale")
+    else:
+        config["reward"]["settling_actuation_scale"] = settling_scale
+    path = tmp_path / "config.yaml"
+    path.write_text(yaml.safe_dump(config), encoding="utf-8")
+    with pytest.raises(ValueError, match=r"reward\.settling_actuation_scale must be a positive number"):
+        load_config(path)

@@ -57,6 +57,7 @@ class ControlledLunarLander(gym.Wrapper):
         downward_scale: float = 10.0,
         main_engine_scale: float = 10.0,
         time_scale: float = 5.0,
+        settling_actuation_scale: float = 5.0,
     ) -> None:
         super().__init__(env)
         if downward_reference_speed <= 0:
@@ -66,6 +67,7 @@ class ControlledLunarLander(gym.Wrapper):
         self.downward_scale = float(downward_scale)
         self.main_engine_scale = float(main_engine_scale)
         self.time_scale = float(time_scale)
+        self.settling_actuation_scale = float(settling_actuation_scale)
         self.scenario: Scenario | None = None
         self._previous_common_shaping = 0.0
         self._step_index = 0
@@ -185,7 +187,10 @@ class ControlledLunarLander(gym.Wrapper):
         downward_cost = -self.reward_weights.downward_speed * self.downward_scale * (downward / self.downward_reference_speed) ** 2 * DT
         main_cost = -self.reward_weights.main_engine * self.main_engine_scale * float(action == 2) * DT
         time_cost = -self.time_scale * DT
-        reward = common + side_cost + downward_cost + main_cost + time_cost
+        settling_actuation_cost = -self.settling_actuation_scale * DT * float(
+            action != 0 and before["left_contact"] and before["right_contact"]
+        )
+        reward = common + side_cost + downward_cost + main_cost + time_cost + settling_actuation_cost
         info = dict(native_info)
         info.update(self._physical_info(action))
         info["step"] = self._step_index - 1
@@ -208,6 +213,7 @@ class ControlledLunarLander(gym.Wrapper):
                     "downward_speed": downward_cost,
                     "main_engine": main_cost,
                     "time": time_cost,
+                    "settling_actuation": settling_actuation_cost,
                     "total": reward,
                 },
             }
@@ -232,6 +238,7 @@ def make_env(config: dict[str, Any], condition: str) -> ControlledLunarLander:
         downward_scale=float(reward["downward_scale"]),
         main_engine_scale=float(reward["main_engine_scale"]),
         time_scale=float(reward["time_scale"]),
+        settling_actuation_scale=float(reward["settling_actuation_scale"]),
     )
 
 

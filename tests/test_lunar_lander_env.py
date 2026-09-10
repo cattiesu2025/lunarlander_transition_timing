@@ -39,6 +39,8 @@ def test_reward_difference_is_only_declared_replacement_weights():
     assert desc["reward_components"]["side_engine"] == econ["reward_components"]["side_engine"]
     assert desc["reward_components"]["time"] == pytest.approx(-config["reward"]["time_scale"] * DT)
     assert desc["reward_components"]["time"] == econ["reward_components"]["time"]
+    assert desc["reward_components"]["settling_actuation"] == 0.0
+    assert desc["reward_components"]["settling_actuation"] == econ["reward_components"]["settling_actuation"]
     assert desc["reward_components"]["downward_speed"] != econ["reward_components"]["downward_speed"]
     assert desc["reward_components"]["main_engine"] != econ["reward_components"]["main_engine"]
     for result in (desc, econ):
@@ -49,6 +51,7 @@ def test_reward_difference_is_only_declared_replacement_weights():
             + components["downward_speed"]
             + components["main_engine"]
             + components["time"]
+            + components["settling_actuation"]
         )
     env_desc.close()
     env_econ.close()
@@ -60,3 +63,17 @@ def test_time_penalty_matches_failure_scale_at_timeout_horizon():
     horizon = config["experiment"]["max_episode_steps"]
     assert reward["time_scale"] * DT == pytest.approx(0.1)
     assert reward["time_scale"] * DT * horizon == pytest.approx(100.0)
+
+
+@pytest.mark.parametrize("action, expected_multiplier", [(0, 0.0), (1, -1.0), (2, -1.0), (3, -1.0)])
+def test_settling_actuation_penalty_only_applies_after_both_leg_contacts(action, expected_multiplier):
+    config = load_config(CONFIG)
+    scenario = Scenario.from_dict(load_manifest(MANIFEST)[8])
+    env = make_env(config, "BAL")
+    env.reset(options={"scenario": scenario})
+    for leg in env.base.legs:
+        leg.ground_contact = True
+    _, _, _, _, info = env.step(action)
+    expected = expected_multiplier * config["reward"]["settling_actuation_scale"] * DT
+    assert info["reward_components"]["settling_actuation"] == pytest.approx(expected)
+    env.close()

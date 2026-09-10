@@ -71,7 +71,7 @@ probe 默认在开发集 18 个场景上运行无点火、单次点火和持续�
 python -m experiments.lunar_lander_braking.run train \
   --config experiments/lunar_lander_braking/configs/pilot.yaml \
   --condition DESC --seed 101 \
-  --output outputs/lunar_lander_braking_pilot_v1/train/DESC/seed_101
+  --output outputs/lunar_lander_braking_pilot_v2/train/DESC/seed_101
 ```
 
 本地 smoke 可追加 `--steps 200 --allow-smoke-seed` 并使用任意测试 seed。Pilot 的 9 个模型用于可学性、尺度和事件语义检查，不进入正式推断。
@@ -85,13 +85,13 @@ qsub scripts/katana_lunar_pilot_eval.pbs
 python scripts/aggregate_lunar_lander.py \
   --config experiments/lunar_lander_braking/configs/pilot.yaml \
   --manifest experiments/lunar_lander_braking/grids/development.json \
-  --input outputs/lunar_lander_braking_pilot_v1/eval \
-  --output outputs/lunar_lander_braking_pilot_v1/aggregate
+  --input outputs/lunar_lander_braking_pilot_v2/eval \
+  --output outputs/lunar_lander_braking_pilot_v2/aggregate
 ```
 
 聚合器对 `phase: pilot` 永远不产生确认性 L1 结果，只输出任务质量、事件语义和完整性诊断。
 
-Pilot v1 在所有条件中加入相同的 `time_scale=5.0 reward-units/s`（每步 `-0.1`，1000-step horizon 累计 `-100`），修复 pilot v0 中 timeout 没有共同时间代价的问题。v1 使用独立输出目录，不覆盖 v0。
+Pilot v1 在所有条件中加入相同的 `time_scale=5.0 reward-units/s`（每步 `-0.1`，1000-step horizon 累计 `-100`），修复 pilot v0 中 timeout 没有共同时间代价的问题。Pilot v2 进一步加入共享的 `settling_actuation_scale=5.0`：仅当动作开始时双腿已接触、策略仍执行非零动作时额外扣 `-0.1`，用于抑制落地后的持续作动，不影响接触前 ONSET。各版本使用独立输出目录，互不覆盖。
 
 若安装时选择的不是默认 Python module 或 venv 路径，请这样传给作业：
 
