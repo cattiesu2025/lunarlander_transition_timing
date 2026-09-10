@@ -7,8 +7,7 @@
 
 set -euo pipefail
 cd "${PBS_O_WORKDIR:?PBS_O_WORKDIR is required}"
-module load "${PYTHON_MODULE:-python/3.10.8}"
-source "${LUNAR_VENV_DIR:-/srv/scratch/$USER/environments/lunar-lander}/bin/activate"
+source scripts/katana_env.sh
 
 conditions=(DESC BAL ECON)
 condition_index=$((PBS_ARRAY_INDEX / 20))

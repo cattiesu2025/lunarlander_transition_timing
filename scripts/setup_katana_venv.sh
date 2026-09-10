@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-# Run inside a Katana interactive compute job, not on a login node.
-python_module="${PYTHON_MODULE:-python/3.10.8}"
+# Run on a Katana compute node, normally through katana_lunar_setup.pbs.
+python_module="${PYTHON_MODULE:-python/3.11.3}"
 venv_dir="${LUNAR_VENV_DIR:-/srv/scratch/$USER/environments/lunar-lander}"
 
 module load "$python_module"

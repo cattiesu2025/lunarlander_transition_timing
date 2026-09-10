@@ -19,21 +19,21 @@ conda run -n lunar-lander python -m pip freeze > outputs/lunar_lander_braking_v1
 
 ### Katana（推荐）
 
-Katana 没有默认的 `conda` 命令。先从登录节点申请交互计算节点：
-
-```bash
-qsub -I -l select=1:ncpus=4:mem=16gb,walltime=2:00:00
-```
-
-作业启动、主机名从 `kdm` 变为计算节点后，进入项目并创建 venv：
+Katana 没有默认的 `conda` 命令。环境安装也通过普通 PBS batch job 完成，不需要等待交互节点：
 
 ```bash
 cd ~/projects/lunarlander_transition_timing
-module avail python
-PYTHON_MODULE=python/3.10.8 bash scripts/setup_katana_venv.sh
+qsub scripts/katana_lunar_setup.pbs
 ```
 
-默认环境位于 `/srv/scratch/$USER/environments/lunar-lander`。如果 `module avail python` 显示了更新版本，可通过 `PYTHON_MODULE=python/<version>` 指定；提交 PBS 时使用相同变量。安装脚本使用 PyTorch 官方 CPU wheel，因为本实验的主要瓶颈是单进程 Box2D 仿真，并不需要 GPU。
+默认加载已在账户上确认可用的 `python/3.11.3`，环境位于 `/srv/scratch/$USER/environments/lunar-lander`。setup job 会安装依赖、执行 `pip check` 并验证 Box2D、Gymnasium 和 PyTorch。可用下面的命令检查 setup 日志：
+
+```bash
+qstat -u "$USER"
+tail -n 50 lunar_setup.o*
+```
+
+安装脚本使用 PyTorch 官方 CPU wheel，因为本实验的主要瓶颈是单进程 Box2D 仿真，并不需要 GPU。如果需要覆盖 module 或 venv 路径，setup 和后续作业必须传入相同的 `PYTHON_MODULE`、`LUNAR_VENV_DIR`。
 
 环境安装完成后先做快速验证：
 
@@ -76,10 +76,10 @@ python -m experiments.lunar_lander_braking.run train \
 
 本地 smoke 可追加 `--steps 200 --allow-smoke-seed` 并使用任意测试 seed。Pilot 的 9 个模型用于可学性、尺度和事件语义检查，不进入正式推断。
 
-Katana 上提交 pilot：
+Katana 上首次提交 pilot，可一次性排队 setup 和 training；training 仅在 setup 成功后启动：
 
 ```bash
-qsub scripts/katana_lunar_pilot_train.pbs
+bash scripts/submit_katana_pilot.sh
 # 9 个训练任务全部成功后：
 qsub scripts/katana_lunar_pilot_eval.pbs
 python scripts/aggregate_lunar_lander.py \
@@ -94,7 +94,7 @@ python scripts/aggregate_lunar_lander.py \
 若安装时选择的不是默认 Python module 或 venv 路径，请这样传给作业：
 
 ```bash
-qsub -v PYTHON_MODULE=python/3.10.8,LUNAR_VENV_DIR=/srv/scratch/$USER/environments/lunar-lander scripts/katana_lunar_pilot_train.pbs
+qsub -v PYTHON_MODULE=python/3.11.3,LUNAR_VENV_DIR=/srv/scratch/$USER/environments/lunar-lander scripts/katana_lunar_pilot_train.pbs
 ```
 
 ## Freeze and formal run
@@ -113,7 +113,7 @@ python -m experiments.lunar_lander_braking.run freeze \
 qsub scripts/katana_lunar_train.pbs
 ```
 
-训练数组完成且 60 个 final checkpoint/hash 均齐全后，再提交 `qsub scripts/katana_lunar_eval.pbs`。PBS 数组各有 60 个任务，映射 `3 conditions × 20 seeds`。默认加载 `python/3.10.8` 并激活 scratch 中的 venv；可用 `PYTHON_MODULE` 和 `LUNAR_VENV_DIR` 覆盖。
+训练数组完成且 60 个 final checkpoint/hash 均齐全后，再提交 `qsub scripts/katana_lunar_eval.pbs`。PBS 数组各有 60 个任务，映射 `3 conditions × 20 seeds`。默认加载 `python/3.11.3` 并激活 scratch 中的 venv；可用 `PYTHON_MODULE` 和 `LUNAR_VENV_DIR` 覆盖。
 
 Formal 的 train/evaluate 命令必须提供 `--freeze-manifest`；PBS 已指向冻结目录。任何配置或 held-out manifest 哈希不匹配都会在运行前失败。评估中的 episode 级异常会写成 `technical_error` 后让 PBS task 返回失败，便于同配置重试。
 
