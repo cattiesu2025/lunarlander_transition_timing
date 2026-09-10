@@ -1,0 +1,20 @@
+[
+  {"scenario_id":"dev_h50_v08_xm","height_above_pad":5.0,"vx":0.0,"vy":-0.8,"x_offset":-0.8,"angle":0.0,"angular_velocity":0.0,"terrain_seed":1101,"noise_seed":2101},
+  {"scenario_id":"dev_h50_v08_xp","height_above_pad":5.0,"vx":0.0,"vy":-0.8,"x_offset":0.8,"angle":0.0,"angular_velocity":0.0,"terrain_seed":1102,"noise_seed":2102},
+  {"scenario_id":"dev_h50_v16_xm","height_above_pad":5.0,"vx":0.0,"vy":-1.6,"x_offset":-0.8,"angle":0.0,"angular_velocity":0.0,"terrain_seed":1103,"noise_seed":2103},
+  {"scenario_id":"dev_h50_v16_xp","height_above_pad":5.0,"vx":0.0,"vy":-1.6,"x_offset":0.8,"angle":0.0,"angular_velocity":0.0,"terrain_seed":1104,"noise_seed":2104},
+  {"scenario_id":"dev_h50_v24_xm","height_above_pad":5.0,"vx":0.0,"vy":-2.4,"x_offset":-0.8,"angle":0.0,"angular_velocity":0.0,"terrain_seed":1105,"noise_seed":2105},
+  {"scenario_id":"dev_h50_v24_xp","height_above_pad":5.0,"vx":0.0,"vy":-2.4,"x_offset":0.8,"angle":0.0,"angular_velocity":0.0,"terrain_seed":1106,"noise_seed":2106},
+  {"scenario_id":"dev_h60_v08_xm","height_above_pad":6.0,"vx":0.0,"vy":-0.8,"x_offset":-0.8,"angle":0.0,"angular_velocity":0.0,"terrain_seed":1107,"noise_seed":2107},
+  {"scenario_id":"dev_h60_v08_xp","height_above_pad":6.0,"vx":0.0,"vy":-0.8,"x_offset":0.8,"angle":0.0,"angular_velocity":0.0,"terrain_seed":1108,"noise_seed":2108},
+  {"scenario_id":"dev_h60_v16_xm","height_above_pad":6.0,"vx":0.0,"vy":-1.6,"x_offset":-0.8,"angle":0.0,"angular_velocity":0.0,"terrain_seed":1109,"noise_seed":2109},
+  {"scenario_id":"dev_h60_v16_xp","height_above_pad":6.0,"vx":0.0,"vy":-1.6,"x_offset":0.8,"angle":0.0,"angular_velocity":0.0,"terrain_seed":1110,"noise_seed":2110},
+  {"scenario_id":"dev_h60_v24_xm","height_above_pad":6.0,"vx":0.0,"vy":-2.4,"x_offset":-0.8,"angle":0.0,"angular_velocity":0.0,"terrain_seed":1111,"noise_seed":2111},
+  {"scenario_id":"dev_h60_v24_xp","height_above_pad":6.0,"vx":0.0,"vy":-2.4,"x_offset":0.8,"angle":0.0,"angular_velocity":0.0,"terrain_seed":1112,"noise_seed":2112},
+  {"scenario_id":"dev_h70_v08_xm","height_above_pad":7.0,"vx":0.0,"vy":-0.8,"x_offset":-0.8,"angle":0.0,"angular_velocity":0.0,"terrain_seed":1113,"noise_seed":2113},
+  {"scenario_id":"dev_h70_v08_xp","height_above_pad":7.0,"vx":0.0,"vy":-0.8,"x_offset":0.8,"angle":0.0,"angular_velocity":0.0,"terrain_seed":1114,"noise_seed":2114},
+  {"scenario_id":"dev_h70_v16_xm","height_above_pad":7.0,"vx":0.0,"vy":-1.6,"x_offset":-0.8,"angle":0.0,"angular_velocity":0.0,"terrain_seed":1115,"noise_seed":2115},
+  {"scenario_id":"dev_h70_v16_xp","height_above_pad":7.0,"vx":0.0,"vy":-1.6,"x_offset":0.8,"angle":0.0,"angular_velocity":0.0,"terrain_seed":1116,"noise_seed":2116},
+  {"scenario_id":"dev_h70_v24_xm","height_above_pad":7.0,"vx":0.0,"vy":-2.4,"x_offset":-0.8,"angle":0.0,"angular_velocity":0.0,"terrain_seed":1117,"noise_seed":2117},
+  {"scenario_id":"dev_h70_v24_xp","height_above_pad":7.0,"vx":0.0,"vy":-2.4,"x_offset":0.8,"angle":0.0,"angular_velocity":0.0,"terrain_seed":1118,"noise_seed":2118}
+]

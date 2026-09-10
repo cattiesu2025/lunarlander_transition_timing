@@ -1,0 +1,24 @@
+#!/bin/bash
+#PBS -N lunar_train
+#PBS -J 0-59
+#PBS -l select=1:ncpus=4:mem=16gb:ngpus=1
+#PBS -l walltime=24:00:00
+#PBS -j oe
+
+set -euo pipefail
+cd "${PBS_O_WORKDIR:?PBS_O_WORKDIR is required}"
+source /opt/anaconda3/etc/profile.d/conda.sh
+conda activate "${LUNAR_CONDA_ENV:-lunar-lander}"
+
+conditions=(DESC BAL ECON)
+condition_index=$((PBS_ARRAY_INDEX / 20))
+seed_offset=$((PBS_ARRAY_INDEX % 20))
+condition="${conditions[$condition_index]}"
+seed=$((1001 + seed_offset))
+output="outputs/lunar_lander_braking_v1/train/${condition}/seed_${seed}"
+device=$(python -c 'import torch; print("cuda" if torch.cuda.is_available() else "cpu")')
+
+python -m experiments.lunar_lander_braking.run train \
+  --config experiments/lunar_lander_braking/configs/formal.yaml \
+  --freeze-manifest outputs/lunar_lander_braking_v1/frozen/manifest.sha256.json \
+  --condition "$condition" --seed "$seed" --device "$device" --output "$output"

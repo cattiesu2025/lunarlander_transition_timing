@@ -1,0 +1,24 @@
+#!/bin/bash
+#PBS -N lunar_pilot_eval
+#PBS -J 0-8
+#PBS -l select=1:ncpus=2:mem=8gb
+#PBS -l walltime=04:00:00
+#PBS -j oe
+
+set -euo pipefail
+cd "${PBS_O_WORKDIR:?PBS_O_WORKDIR is required}"
+source /opt/anaconda3/etc/profile.d/conda.sh
+conda activate "${LUNAR_CONDA_ENV:-lunar-lander}"
+
+conditions=(DESC BAL ECON)
+seeds=(101 202 303)
+condition="${conditions[$((PBS_ARRAY_INDEX / 3))]}"
+seed="${seeds[$((PBS_ARRAY_INDEX % 3))]}"
+root="outputs/lunar_lander_braking_pilot_v0"
+
+python -m experiments.lunar_lander_braking.run evaluate \
+  --config experiments/lunar_lander_braking/configs/pilot.yaml \
+  --manifest experiments/lunar_lander_braking/grids/development.json \
+  --condition "$condition" --seed "$seed" \
+  --checkpoint "$root/train/$condition/seed_${seed}/final.pt" \
+  --output "$root/eval/$condition/seed_${seed}"
