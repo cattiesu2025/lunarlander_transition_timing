@@ -1,0 +1,21 @@
+#!/bin/bash
+#PBS -N lunar_econ_1m_eval
+#PBS -J 0-2
+#PBS -l select=1:ncpus=2:mem=8gb
+#PBS -l walltime=04:00:00
+#PBS -j oe
+
+set -euo pipefail
+cd "${PBS_O_WORKDIR:?PBS_O_WORKDIR is required}"
+source scripts/katana_env.sh
+
+seeds=(101 202 303)
+seed="${seeds[$PBS_ARRAY_INDEX]}"
+root="outputs/lunar_lander_braking_pilot_v4_econ_1m"
+
+python -m experiments.lunar_lander_braking.run evaluate \
+  --config experiments/lunar_lander_braking/configs/pilot_1m.yaml \
+  --manifest experiments/lunar_lander_braking/grids/development.json \
+  --condition ECON --seed "$seed" \
+  --checkpoint "$root/train/ECON/seed_${seed}/final.zip" \
+  --output "$root/eval/ECON/seed_${seed}"

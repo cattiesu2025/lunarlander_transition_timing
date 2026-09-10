@@ -93,6 +93,18 @@ python scripts/aggregate_lunar_lander.py \
 
 Pilot v1 在所有条件中加入相同的 `time_scale=5.0 reward-units/s`（每步 `-0.1`，1000-step horizon 累计 `-100`），修复 pilot v0 中 timeout 没有共同时间代价的问题。Pilot v2 进一步加入共享的 `settling_actuation_scale=5.0`：仅当动作开始时双腿已接触、策略仍执行非零动作时额外扣 `-0.1`，用于抑制落地后的持续作动，不影响接触前 ONSET。Pilot v3 保留 v2 奖励，将训练器替换为继承 Stable-Baselines3 `DQN` 并覆盖 `train()` 的 Double DQN；online network 选择 next action，target network 评估该 action。各版本使用独立输出目录，互不覆盖。
 
+### ECON 1M training-budget diagnostic
+
+Pilot v4 仅将 ECON 的训练预算从 500k 增加到 1M environment steps，其余配置与 v3 完全一致。它用于判断 ECON 是否因 500k 过早停止而未收敛，不能与 v3 DESC/BAL 直接组成 ONSET 推断。
+
+```bash
+qsub scripts/katana_lunar_econ_1m_train.pbs
+# 3 个 train array tasks 全部成功后：
+qsub scripts/katana_lunar_econ_1m_eval.pbs
+```
+
+输出位于 `outputs/lunar_lander_braking_pilot_v4_econ_1m/`。若三个 ECON seed 在 1M 都通过任务质量门槛，后续才用同一 1M 预算从头重训三个条件。
+
 若安装时选择的不是默认 Python module 或 venv 路径，请这样传给作业：
 
 ```bash

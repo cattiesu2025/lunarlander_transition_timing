@@ -14,6 +14,7 @@ from experiments.lunar_lander_braking.run import verify_frozen_inputs
 
 
 CONFIG = Path("experiments/lunar_lander_braking/configs/pilot.yaml")
+ECON_1M_CONFIG = Path("experiments/lunar_lander_braking/configs/pilot_1m.yaml")
 DEVELOPMENT = Path("experiments/lunar_lander_braking/grids/development.json")
 HELD_OUT = Path("experiments/lunar_lander_braking/grids/held_out.json")
 
@@ -81,3 +82,15 @@ def test_config_declares_sb3_double_dqn_override():
     assert config["agent"]["framework"] == "stable_baselines3"
     assert config["agent"]["algorithm"] == "double_dqn_train_override"
     assert config["agent"]["gradient_steps"] == 1
+
+
+def test_econ_1m_pilot_changes_only_name_and_training_budget():
+    base = load_config(CONFIG)
+    extended = load_config(ECON_1M_CONFIG)
+    assert extended["experiment"]["name"] == "lunar_lander_braking_pilot_v4_econ_1m"
+    assert extended["experiment"]["train_steps"] == 1_000_000
+    base_experiment = {**base["experiment"], "name": extended["experiment"]["name"], "train_steps": 1_000_000}
+    assert extended["experiment"] == base_experiment
+    assert {key: value for key, value in extended.items() if key != "experiment"} == {
+        key: value for key, value in base.items() if key != "experiment"
+    }
