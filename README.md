@@ -117,6 +117,20 @@ qsub scripts/katana_lunar_v5_eval.pbs
 
 Evaluation array 共 30 个任务，覆盖 `2 arms × 3 seeds × 5 checkpoints`，输出位于 `outputs/lunar_lander_braking_pilot_v5_height_budget/`。选择规则只使用 original-scenario landing quality：每个 seed 至少 15/18 landed，并在下一个 checkpoint 保持门槛；不得使用 ONSET 选择高度或预算。V5 不与旧版本 DESC/BAL 组合推断。
 
+### V6 high-height latest-eligible pilot
+
+V6 在 high-height 训练分布 `7.8–12.2` 下从头训练 DESC/BAL/ECON × 3 seeds。每个模型从 1M checkpoint 向前选择第一个通过 gate 的 checkpoint，和 highway 项目的 latest-eligible 结构一致。Gate 仅检查 original/low-speed 各自 `landed >= 15/18`、`primary events >= 15/18`、完整性与 hashes；选择代码不读取 ONSET 时间。
+
+```bash
+qsub scripts/katana_lunar_v6_train.pbs
+# 9 个 train tasks 全部成功后：
+qsub scripts/katana_lunar_v6_dev_eval.pbs
+# 45 个 development evaluation tasks 全部成功后：
+qsub scripts/katana_lunar_v6_select.pbs
+```
+
+输出位于 `outputs/lunar_lander_braking_pilot_v6_high_latest/`。`selection/model_selection.csv` 保留全部 checkpoint gate audit，`selection/selected_checkpoints.json` 记录九个模型的选择。`held_out_high.json` 与 development 的固定轴和 seeds 均不重合；v6 pilot 不运行 held-out。
+
 若安装时选择的不是默认 Python module 或 venv 路径，请这样传给作业：
 
 ```bash

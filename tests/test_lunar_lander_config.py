@@ -17,9 +17,11 @@ CONFIG = Path("experiments/lunar_lander_braking/configs/pilot.yaml")
 ECON_1M_CONFIG = Path("experiments/lunar_lander_braking/configs/pilot_1m.yaml")
 V5_CURRENT_CONFIG = Path("experiments/lunar_lander_braking/configs/pilot_v5_current.yaml")
 V5_HIGH_CONFIG = Path("experiments/lunar_lander_braking/configs/pilot_v5_high.yaml")
+V6_HIGH_CONFIG = Path("experiments/lunar_lander_braking/configs/pilot_v6_high_latest.yaml")
 DEVELOPMENT = Path("experiments/lunar_lander_braking/grids/development.json")
 DEVELOPMENT_HIGH = Path("experiments/lunar_lander_braking/grids/development_high.json")
 HELD_OUT = Path("experiments/lunar_lander_braking/grids/held_out.json")
+HELD_OUT_HIGH = Path("experiments/lunar_lander_braking/grids/held_out_high.json")
 
 
 def test_manifests_are_complete_and_axes_do_not_overlap():
@@ -143,6 +145,39 @@ def test_high_development_grid_only_changes_ids_and_heights():
             key: value for key, value in low_row.items()
             if key not in {"scenario_id", "height_above_pad"}
         }
+
+
+def test_v6_uses_v5_high_training_contract_with_new_experiment_name():
+    v5 = load_config(V5_HIGH_CONFIG)
+    v6 = load_config(V6_HIGH_CONFIG)
+    expected = {
+        **v5,
+        "experiment": {**v5["experiment"], "name": v6["experiment"]["name"]},
+        "selection": v6["selection"],
+    }
+    assert v6 == expected
+    assert v6["selection"] == {
+        "rule": "latest_eligible_checkpoint",
+        "interventions": ["original", "low_descent_speed"],
+        "minimum_landed_per_intervention": 15,
+        "minimum_primary_events_per_intervention": 15,
+        "uses_onset_time": False,
+    }
+
+
+def test_high_development_and_held_out_axes_do_not_overlap():
+    development = load_manifest(DEVELOPMENT_HIGH)
+    held_out = load_manifest(HELD_OUT_HIGH)
+    assert len(development) == len(held_out) == 18
+    for field in ("height_above_pad", "vy", "x_offset", "terrain_seed", "noise_seed"):
+        assert set(row[field] for row in development).isdisjoint(
+            row[field] for row in held_out
+        )
+    training_height = load_config(V6_HIGH_CONFIG)["environment"][
+        "training_distribution"
+    ]["height_above_pad"]
+    low, high = training_height
+    assert all(low <= row["height_above_pad"] <= high for row in held_out)
 
 
 @pytest.mark.parametrize(

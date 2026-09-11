@@ -99,6 +99,27 @@ def load_config(path: str | Path) -> dict[str, Any]:
             raise ValueError(
                 "experiment.checkpoint_steps must align with agent.train_frequency"
             )
+    selection = config.get("selection")
+    if selection is not None:
+        if selection.get("rule") != "latest_eligible_checkpoint":
+            raise ValueError("selection.rule must be latest_eligible_checkpoint")
+        if selection.get("interventions") != ["original", "low_descent_speed"]:
+            raise ValueError(
+                "selection.interventions must be original and low_descent_speed"
+            )
+        if selection.get("uses_onset_time") is not False:
+            raise ValueError("selection.uses_onset_time must be false")
+        for field in (
+            "minimum_landed_per_intervention",
+            "minimum_primary_events_per_intervention",
+        ):
+            value = selection.get(field)
+            if (
+                not isinstance(value, int)
+                or isinstance(value, bool)
+                or not 1 <= value <= 18
+            ):
+                raise ValueError(f"selection.{field} must be an integer in [1, 18]")
     return config
 
 

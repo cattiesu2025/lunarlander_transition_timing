@@ -186,13 +186,16 @@ def _checkpoint_metadata(
     seed: int,
     episodes: int,
     role: str,
+    training_steps: int | None = None,
 ) -> dict[str, Any]:
     return {
         "algorithm": "DoubleDQN_overridden_SB3_DQN_train",
         "stable_baselines3_version": stable_baselines3.__version__,
         "condition": condition,
         "seed": int(seed),
-        "training_steps": int(model.num_timesteps),
+        "training_steps": int(
+            model.num_timesteps if training_steps is None else training_steps
+        ),
         "episodes": int(episodes),
         "config_hash": canonical_hash(config),
         "checkpoint_role": role,
@@ -208,11 +211,12 @@ def _save_checkpoint(
     seed: int,
     episodes: int,
     role: str,
+    training_steps: int | None = None,
 ) -> None:
     checkpoint.parent.mkdir(parents=True, exist_ok=True)
     model.save(checkpoint)
     metadata = _checkpoint_metadata(
-        model, config, condition, seed, episodes, role
+        model, config, condition, seed, episodes, role, training_steps
     )
     metadata["checkpoint_sha256"] = file_hash(checkpoint)
     checkpoint.with_name("metadata.json").write_text(
@@ -241,7 +245,11 @@ class PeriodicCheckpointCallback(BaseCallback):
         self.metrics = metrics
 
     def _on_step(self) -> bool:
-        while self.pending_steps and self.num_timesteps >= self.pending_steps[0]:
+        # SB3 invokes this callback after env.step(), but before the current
+        # transition is stored and trained on. At callback N+1, the model has
+        # therefore incorporated exactly N completed transitions.
+        completed_steps = self.num_timesteps - int(self.training_env.num_envs)
+        while self.pending_steps and completed_steps >= self.pending_steps[0]:
             planned_step = self.pending_steps.pop(0)
             checkpoint = (
                 self.output
@@ -257,6 +265,7 @@ class PeriodicCheckpointCallback(BaseCallback):
                 self.seed,
                 self.metrics.completed_episodes,
                 "scheduled_fixed_budget",
+                planned_step,
             )
         return True
 
