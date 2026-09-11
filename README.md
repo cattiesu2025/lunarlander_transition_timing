@@ -105,6 +105,18 @@ qsub scripts/katana_lunar_econ_1m_eval.pbs
 
 输出位于 `outputs/lunar_lander_braking_pilot_v4_econ_1m/`。若三个 ECON seed 在 1M 都通过任务质量门槛，后续才用同一 1M 预算从头重训三个条件。
 
+### V5 height × checkpoint diagnostic
+
+V5 只训练 ECON，并同时运行 current height（训练 4.8–7.2，评估 5/6/7）与 high height（训练 7.8–12.2，评估 8/10/12）两个实验臂。每次训练自动保存 600k、700k、800k、900k、1M checkpoints，因此只需要 6 个训练任务，而不是为五个预算分别训练。
+
+```bash
+qsub scripts/katana_lunar_v5_train.pbs
+# 6 个 train array tasks 全部成功后：
+qsub scripts/katana_lunar_v5_eval.pbs
+```
+
+Evaluation array 共 30 个任务，覆盖 `2 arms × 3 seeds × 5 checkpoints`，输出位于 `outputs/lunar_lander_braking_pilot_v5_height_budget/`。选择规则只使用 original-scenario landing quality：每个 seed 至少 15/18 landed，并在下一个 checkpoint 保持门槛；不得使用 ONSET 选择高度或预算。V5 不与旧版本 DESC/BAL 组合推断。
+
 若安装时选择的不是默认 Python module 或 venv 路径，请这样传给作业：
 
 ```bash

@@ -78,6 +78,27 @@ def load_config(path: str | Path) -> dict[str, Any]:
         raise ValueError("agent.algorithm must be double_dqn_train_override")
     if int(agent.get("gradient_steps", 0)) <= 0:
         raise ValueError("agent.gradient_steps must be a positive integer")
+    checkpoint_steps = config["experiment"].get("checkpoint_steps")
+    if checkpoint_steps is not None:
+        if (
+            not isinstance(checkpoint_steps, list)
+            or not checkpoint_steps
+            or any(
+                not isinstance(step, int) or isinstance(step, bool) or step <= 0
+                for step in checkpoint_steps
+            )
+        ):
+            raise ValueError("experiment.checkpoint_steps must be positive integers")
+        if checkpoint_steps != sorted(set(checkpoint_steps)):
+            raise ValueError("experiment.checkpoint_steps must be sorted and unique")
+        train_steps = int(config["experiment"]["train_steps"])
+        if checkpoint_steps[-1] > train_steps:
+            raise ValueError("experiment.checkpoint_steps cannot exceed train_steps")
+        train_frequency = int(agent["train_frequency"])
+        if any(step % train_frequency for step in checkpoint_steps):
+            raise ValueError(
+                "experiment.checkpoint_steps must align with agent.train_frequency"
+            )
     return config
 
 

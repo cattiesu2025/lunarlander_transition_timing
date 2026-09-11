@@ -1,0 +1,25 @@
+#!/bin/bash
+#PBS -N lunar_v5_train
+#PBS -J 0-5
+#PBS -l select=1:ncpus=4:mem=16gb
+#PBS -l walltime=04:00:00
+#PBS -j oe
+
+set -euo pipefail
+cd "${PBS_O_WORKDIR:?PBS_O_WORKDIR is required}"
+source scripts/katana_env.sh
+
+arms=(current high)
+configs=(pilot_v5_current.yaml pilot_v5_high.yaml)
+seeds=(101 202 303)
+arm_index=$((PBS_ARRAY_INDEX / 3))
+seed_index=$((PBS_ARRAY_INDEX % 3))
+arm="${arms[$arm_index]}"
+config="${configs[$arm_index]}"
+seed="${seeds[$seed_index]}"
+root="outputs/lunar_lander_braking_pilot_v5_height_budget"
+
+python -m experiments.lunar_lander_braking.run train \
+  --config "experiments/lunar_lander_braking/configs/$config" \
+  --condition ECON --seed "$seed" --device cpu \
+  --output "$root/train/$arm/ECON/seed_${seed}"

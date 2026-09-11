@@ -1,0 +1,33 @@
+#!/bin/bash
+#PBS -N lunar_v5_eval
+#PBS -J 0-29
+#PBS -l select=1:ncpus=2:mem=8gb
+#PBS -l walltime=04:00:00
+#PBS -j oe
+
+set -euo pipefail
+cd "${PBS_O_WORKDIR:?PBS_O_WORKDIR is required}"
+source scripts/katana_env.sh
+
+arms=(current high)
+configs=(pilot_v5_current.yaml pilot_v5_high.yaml)
+manifests=(development.json development_high.json)
+seeds=(101 202 303)
+steps=(600000 700000 800000 900000 1000000)
+arm_index=$((PBS_ARRAY_INDEX / 15))
+within_arm=$((PBS_ARRAY_INDEX % 15))
+seed_index=$((within_arm / 5))
+step_index=$((within_arm % 5))
+arm="${arms[$arm_index]}"
+config="${configs[$arm_index]}"
+manifest="${manifests[$arm_index]}"
+seed="${seeds[$seed_index]}"
+step="${steps[$step_index]}"
+root="outputs/lunar_lander_braking_pilot_v5_height_budget"
+
+python -m experiments.lunar_lander_braking.run evaluate \
+  --config "experiments/lunar_lander_braking/configs/$config" \
+  --manifest "experiments/lunar_lander_braking/grids/$manifest" \
+  --condition ECON --seed "$seed" \
+  --checkpoint "$root/train/$arm/ECON/seed_${seed}/checkpoints/step_${step}/model.zip" \
+  --output "$root/eval/$arm/step_${step}/ECON/seed_${seed}"

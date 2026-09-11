@@ -12,7 +12,7 @@ import numpy as np
 import stable_baselines3
 import torch as th
 from stable_baselines3 import DQN
-from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.callbacks import BaseCallback, CallbackList
 from torch.nn import functional as F
 
 from .config import canonical_hash, file_hash
@@ -179,6 +179,88 @@ class TrainingMetricsCallback(BaseCallback):
             self.handle = None
 
 
+def _checkpoint_metadata(
+    model: DoubleDQN,
+    config: dict[str, Any],
+    condition: str,
+    seed: int,
+    episodes: int,
+    role: str,
+) -> dict[str, Any]:
+    return {
+        "algorithm": "DoubleDQN_overridden_SB3_DQN_train",
+        "stable_baselines3_version": stable_baselines3.__version__,
+        "condition": condition,
+        "seed": int(seed),
+        "training_steps": int(model.num_timesteps),
+        "episodes": int(episodes),
+        "config_hash": canonical_hash(config),
+        "checkpoint_role": role,
+        "checkpoint_format": "stable_baselines3_zip",
+    }
+
+
+def _save_checkpoint(
+    model: DoubleDQN,
+    checkpoint: Path,
+    config: dict[str, Any],
+    condition: str,
+    seed: int,
+    episodes: int,
+    role: str,
+) -> None:
+    checkpoint.parent.mkdir(parents=True, exist_ok=True)
+    model.save(checkpoint)
+    metadata = _checkpoint_metadata(
+        model, config, condition, seed, episodes, role
+    )
+    metadata["checkpoint_sha256"] = file_hash(checkpoint)
+    checkpoint.with_name("metadata.json").write_text(
+        json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+
+
+class PeriodicCheckpointCallback(BaseCallback):
+    """Save predeclared fixed-step snapshots with independently hashed metadata."""
+
+    def __init__(
+        self,
+        output: Path,
+        steps: list[int],
+        config: dict[str, Any],
+        condition: str,
+        seed: int,
+        metrics: TrainingMetricsCallback,
+    ) -> None:
+        super().__init__(verbose=0)
+        self.output = output
+        self.pending_steps = list(steps)
+        self.config = config
+        self.condition = condition
+        self.seed = int(seed)
+        self.metrics = metrics
+
+    def _on_step(self) -> bool:
+        while self.pending_steps and self.num_timesteps >= self.pending_steps[0]:
+            planned_step = self.pending_steps.pop(0)
+            checkpoint = (
+                self.output
+                / "checkpoints"
+                / f"step_{planned_step}"
+                / "model.zip"
+            )
+            _save_checkpoint(
+                self.model,
+                checkpoint,
+                self.config,
+                self.condition,
+                self.seed,
+                self.metrics.completed_episodes,
+                "scheduled_fixed_budget",
+            )
+        return True
+
+
 def train_condition(
     config: dict[str, Any],
     condition: str,
@@ -197,7 +279,20 @@ def train_condition(
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
     training_env = TrainingScenarioEnv(make_env(config, condition), config, seed)
-    callback = TrainingMetricsCallback(output / "training_metrics.jsonl")
+    metrics_callback = TrainingMetricsCallback(output / "training_metrics.jsonl")
+    requested_checkpoints = [
+        int(step)
+        for step in config["experiment"].get("checkpoint_steps", [])
+        if int(step) <= total_steps
+    ]
+    periodic_callback = PeriodicCheckpointCallback(
+        output,
+        [step for step in requested_checkpoints if step < total_steps],
+        config,
+        condition,
+        seed,
+        metrics_callback,
+    )
 
     model = DoubleDQN(
         "MlpPolicy",
@@ -222,24 +317,28 @@ def train_condition(
         device=device,
         verbose=0,
     )
-    model.learn(total_timesteps=total_steps, callback=callback, log_interval=None)
+    callbacks = CallbackList([metrics_callback, periodic_callback])
+    model.learn(total_timesteps=total_steps, callback=callbacks, log_interval=None)
 
     checkpoint = output / "final.zip"
-    model.save(checkpoint)
-    metadata = {
-        "algorithm": "DoubleDQN_overridden_SB3_DQN_train",
-        "stable_baselines3_version": stable_baselines3.__version__,
-        "condition": condition,
-        "seed": int(seed),
-        "training_steps": int(model.num_timesteps),
-        "episodes": int(callback.completed_episodes),
-        "config_hash": canonical_hash(config),
-        "checkpoint_role": "final_fixed_budget",
-        "checkpoint_format": "stable_baselines3_zip",
-    }
-    metadata["checkpoint_sha256"] = file_hash(checkpoint)
-    (output / "metadata.json").write_text(
-        json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    _save_checkpoint(
+        model,
+        checkpoint,
+        config,
+        condition,
+        seed,
+        metrics_callback.completed_episodes,
+        "final_fixed_budget",
     )
+    if total_steps in requested_checkpoints:
+        _save_checkpoint(
+            model,
+            output / "checkpoints" / f"step_{total_steps}" / "model.zip",
+            config,
+            condition,
+            seed,
+            metrics_callback.completed_episodes,
+            "scheduled_fixed_budget",
+        )
     model.get_env().close()
     return checkpoint

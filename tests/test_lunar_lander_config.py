@@ -15,7 +15,10 @@ from experiments.lunar_lander_braking.run import verify_frozen_inputs
 
 CONFIG = Path("experiments/lunar_lander_braking/configs/pilot.yaml")
 ECON_1M_CONFIG = Path("experiments/lunar_lander_braking/configs/pilot_1m.yaml")
+V5_CURRENT_CONFIG = Path("experiments/lunar_lander_braking/configs/pilot_v5_current.yaml")
+V5_HIGH_CONFIG = Path("experiments/lunar_lander_braking/configs/pilot_v5_high.yaml")
 DEVELOPMENT = Path("experiments/lunar_lander_braking/grids/development.json")
+DEVELOPMENT_HIGH = Path("experiments/lunar_lander_braking/grids/development_high.json")
 HELD_OUT = Path("experiments/lunar_lander_braking/grids/held_out.json")
 
 
@@ -94,3 +97,67 @@ def test_econ_1m_pilot_changes_only_name_and_training_budget():
     assert {key: value for key, value in extended.items() if key != "experiment"} == {
         key: value for key, value in base.items() if key != "experiment"
     }
+
+
+def test_v5_arms_change_only_declared_checkpoint_and_height_fields():
+    v4 = load_config(ECON_1M_CONFIG)
+    current = load_config(V5_CURRENT_CONFIG)
+    high = load_config(V5_HIGH_CONFIG)
+    expected_steps = [600_000, 700_000, 800_000, 900_000, 1_000_000]
+    assert current["experiment"]["checkpoint_steps"] == expected_steps
+    assert high["experiment"]["checkpoint_steps"] == expected_steps
+
+    v4_experiment = {
+        **v4["experiment"],
+        "name": current["experiment"]["name"],
+        "checkpoint_steps": expected_steps,
+    }
+    assert current["experiment"] == v4_experiment
+    assert {key: value for key, value in current.items() if key != "experiment"} == {
+        key: value for key, value in v4.items() if key != "experiment"
+    }
+
+    expected_high = {**current, "experiment": {**current["experiment"], "name": high["experiment"]["name"]}}
+    expected_high["environment"] = {
+        **current["environment"],
+        "training_distribution": {
+            **current["environment"]["training_distribution"],
+            "height_above_pad": [7.8, 12.2],
+        },
+    }
+    assert high == expected_high
+
+
+def test_high_development_grid_only_changes_ids_and_heights():
+    current = load_manifest(DEVELOPMENT)
+    high = load_manifest(DEVELOPMENT_HIGH)
+    assert len(high) == 18
+    height_map = {5.0: 8.0, 6.0: 10.0, 7.0: 12.0}
+    for low_row, high_row in zip(current, high):
+        assert high_row["height_above_pad"] == height_map[low_row["height_above_pad"]]
+        assert high_row["scenario_id"].startswith("devhigh_")
+        assert {
+            key: value for key, value in high_row.items()
+            if key not in {"scenario_id", "height_above_pad"}
+        } == {
+            key: value for key, value in low_row.items()
+            if key not in {"scenario_id", "height_above_pad"}
+        }
+
+
+@pytest.mark.parametrize(
+    "checkpoint_steps,match",
+    [
+        ([600_000, 600_000], "sorted and unique"),
+        ([700_000, 600_000], "sorted and unique"),
+        ([600_002], "align"),
+        ([1_100_000], "cannot exceed"),
+    ],
+)
+def test_checkpoint_schedule_validation(tmp_path, checkpoint_steps, match):
+    config = yaml.safe_load(V5_CURRENT_CONFIG.read_text(encoding="utf-8"))
+    config["experiment"]["checkpoint_steps"] = checkpoint_steps
+    path = tmp_path / "config.yaml"
+    path.write_text(yaml.safe_dump(config), encoding="utf-8")
+    with pytest.raises(ValueError, match=match):
+        load_config(path)
