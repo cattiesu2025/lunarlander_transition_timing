@@ -25,6 +25,7 @@ from experiments.lunar_lander_braking.selection import (  # noqa: E402
     checkpoint_gate_summary,
     latest_eligible_checkpoint,
 )
+from experiments.lunar_lander_braking.run import verify_frozen_inputs  # noqa: E402
 
 
 CONDITIONS = ("DESC", "BAL", "ECON")
@@ -179,6 +180,9 @@ def write_outputs(
     selected: list[dict[str, Any]],
     minimum_landed: int,
     minimum_primary_events: int,
+    config_hash: str,
+    development_manifest_sha256: str,
+    freeze_manifest_sha256: str | None,
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     with (output_dir / "model_selection.csv").open("w", newline="", encoding="utf-8") as handle:
@@ -186,8 +190,11 @@ def write_outputs(
         writer.writeheader()
         writer.writerows(audit)
     payload = {
-        "schema_version": 1,
+        "schema_version": 2,
         "selection_rule": "latest_eligible_checkpoint",
+        "config_hash": config_hash,
+        "development_manifest_sha256": development_manifest_sha256,
+        "freeze_manifest_sha256": freeze_manifest_sha256,
         "gate": {
             "interventions": list(INTERVENTIONS),
             "minimum_landed_per_intervention": minimum_landed,
@@ -199,6 +206,15 @@ def write_outputs(
     (output_dir / "selected_checkpoints.json").write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
+    selected_path = output_dir / "selected_checkpoints.json"
+    lock = {
+        "schema_version": 1,
+        "file": selected_path.name,
+        "sha256": file_hash(selected_path),
+    }
+    (output_dir / "selected_checkpoints.sha256.json").write_text(
+        json.dumps(lock, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
 
 
 def main() -> None:
@@ -209,6 +225,10 @@ def main() -> None:
     parser.add_argument("--train-root", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument(
+        "--freeze-manifest",
+        help="Required for formal selection; verifies the config and development grid.",
+    )
+    parser.add_argument(
         "--conditions",
         nargs="+",
         choices=CONDITIONS,
@@ -218,6 +238,14 @@ def main() -> None:
     args = parser.parse_args()
     config = load_config(args.config)
     manifest = load_manifest(args.manifest)
+    formal = config["experiment"]["phase"] == "formal"
+    if formal and not args.freeze_manifest:
+        raise SystemExit("Formal selection requires --freeze-manifest")
+    if args.freeze_manifest:
+        verify_frozen_inputs(args.freeze_manifest, [args.config, args.manifest])
+    output_dir = Path(args.output)
+    if formal and output_dir.exists():
+        raise SystemExit(f"Formal selection output already exists: {output_dir}")
     audit, selected = select_models(
         config,
         manifest,
@@ -227,7 +255,7 @@ def main() -> None:
     )
     selection = config.get("selection", {})
     write_outputs(
-        Path(args.output),
+        output_dir,
         audit,
         selected,
         int(selection.get("minimum_landed_per_intervention", MIN_LANDED)),
@@ -236,6 +264,9 @@ def main() -> None:
                 "minimum_primary_events_per_intervention", MIN_PRIMARY_EVENTS
             )
         ),
+        canonical_hash(config),
+        file_hash(args.manifest),
+        file_hash(args.freeze_manifest) if args.freeze_manifest else None,
     )
     expected_models = len(args.conditions) * len(config["experiment"]["seeds"])
     if len(selected) != expected_models:
@@ -248,7 +279,7 @@ def main() -> None:
             - {(row["condition"], int(row["seed"])) for row in selected}
         )
         raise SystemExit(f"No eligible checkpoint for: {missing}")
-    print(Path(args.output) / "selected_checkpoints.json")
+    print(output_dir / "selected_checkpoints.json")
 
 
 if __name__ == "__main__":

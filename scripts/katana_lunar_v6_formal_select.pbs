@@ -1,0 +1,18 @@
+#!/bin/bash
+#PBS -N lunar_v6_fselect
+#PBS -l select=1:ncpus=1:mem=4gb
+#PBS -l walltime=01:00:00
+#PBS -j oe
+
+set -euo pipefail
+cd "${PBS_O_WORKDIR:?PBS_O_WORKDIR is required}"
+source scripts/katana_env.sh
+
+root="outputs/lunar_lander_braking_formal_v2_high_latest"
+python scripts/select_lunar_checkpoints.py \
+  --config experiments/lunar_lander_braking/configs/formal_v6_high_latest.yaml \
+  --manifest experiments/lunar_lander_braking/grids/development_high.json \
+  --freeze-manifest "$root/frozen/manifest.sha256.json" \
+  --input "$root/development_eval" \
+  --train-root "$root/train" \
+  --output "$root/selection"

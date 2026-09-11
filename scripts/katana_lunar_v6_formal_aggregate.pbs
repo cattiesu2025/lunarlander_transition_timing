@@ -1,0 +1,22 @@
+#!/bin/bash
+#PBS -N lunar_v6_fagg
+#PBS -l select=1:ncpus=1:mem=8gb
+#PBS -l walltime=01:00:00
+#PBS -j oe
+
+set -euo pipefail
+cd "${PBS_O_WORKDIR:?PBS_O_WORKDIR is required}"
+source scripts/katana_env.sh
+
+root="outputs/lunar_lander_braking_formal_v2_high_latest"
+output="$root/aggregate"
+if [[ -e "$output" ]]; then
+  echo "Refusing to overwrite formal aggregate: $output" >&2
+  exit 1
+fi
+
+python scripts/aggregate_lunar_lander.py \
+  --config experiments/lunar_lander_braking/configs/formal_v6_high_latest.yaml \
+  --manifest experiments/lunar_lander_braking/grids/held_out_high.json \
+  --input "$root/held_out_eval" \
+  --output "$output"

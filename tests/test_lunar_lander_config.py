@@ -18,6 +18,9 @@ ECON_1M_CONFIG = Path("experiments/lunar_lander_braking/configs/pilot_1m.yaml")
 V5_CURRENT_CONFIG = Path("experiments/lunar_lander_braking/configs/pilot_v5_current.yaml")
 V5_HIGH_CONFIG = Path("experiments/lunar_lander_braking/configs/pilot_v5_high.yaml")
 V6_HIGH_CONFIG = Path("experiments/lunar_lander_braking/configs/pilot_v6_high_latest.yaml")
+FORMAL_V6_HIGH_CONFIG = Path(
+    "experiments/lunar_lander_braking/configs/formal_v6_high_latest.yaml"
+)
 DEVELOPMENT = Path("experiments/lunar_lander_braking/grids/development.json")
 DEVELOPMENT_HIGH = Path("experiments/lunar_lander_braking/grids/development_high.json")
 HELD_OUT = Path("experiments/lunar_lander_braking/grids/held_out.json")
@@ -178,6 +181,21 @@ def test_high_development_and_held_out_axes_do_not_overlap():
     ]["height_above_pad"]
     low, high = training_height
     assert all(low <= row["height_above_pad"] <= high for row in held_out)
+
+
+def test_formal_v6_promotes_pilot_contract_without_method_changes():
+    pilot = load_config(V6_HIGH_CONFIG)
+    formal = load_config(FORMAL_V6_HIGH_CONFIG)
+    expected = {
+        **pilot,
+        "experiment": {
+            **pilot["experiment"],
+            "name": "lunar_lander_braking_formal_v2_high_latest",
+            "phase": "formal",
+            "seeds": list(range(1001, 1021)),
+        },
+    }
+    assert formal == expected
 
 
 @pytest.mark.parametrize(

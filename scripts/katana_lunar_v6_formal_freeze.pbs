@@ -1,0 +1,23 @@
+#!/bin/bash
+#PBS -N lunar_v6_freeze
+#PBS -l select=1:ncpus=1:mem=4gb
+#PBS -l walltime=00:30:00
+#PBS -j oe
+
+set -euo pipefail
+cd "${PBS_O_WORKDIR:?PBS_O_WORKDIR is required}"
+source scripts/katana_env.sh
+
+root="outputs/lunar_lander_braking_formal_v2_high_latest"
+mkdir -p "$root/locks"
+python -VV > "$root/locks/python-version.txt" 2>&1
+python -m pip freeze > "$root/locks/pip-freeze.txt"
+
+python -m experiments.lunar_lander_braking.run freeze \
+  --config experiments/lunar_lander_braking/configs/formal_v6_high_latest.yaml \
+  --development-manifest experiments/lunar_lander_braking/grids/development_high.json \
+  --held-out-manifest experiments/lunar_lander_braking/grids/held_out_high.json \
+  --python-lock "$root/locks/python-version.txt" \
+  --pip-lock "$root/locks/pip-freeze.txt" \
+  --output "$root/frozen" \
+  --confirm-calibrated
