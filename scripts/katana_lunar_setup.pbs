@@ -8,6 +8,7 @@ set -euo pipefail
 cd "${PBS_O_WORKDIR:?PBS_O_WORKDIR is required}"
 
 export PYTHON_MODULE="${PYTHON_MODULE:-python/3.11.3}"
-export LUNAR_VENV_DIR="${LUNAR_VENV_DIR:-/srv/scratch/$USER/environments/lunar-lander}"
+export LUNAR_PYTHON_VERSION="${LUNAR_PYTHON_VERSION:-3.11}"
+export LUNAR_VENV_DIR="${LUNAR_VENV_DIR:-/srv/scratch/$USER/environments/lunar-lander-py311}"
 
 bash scripts/setup_katana_venv.sh

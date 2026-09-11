@@ -26,7 +26,7 @@ cd ~/projects/lunarlander_transition_timing
 qsub scripts/katana_lunar_setup.pbs
 ```
 
-默认加载已在账户上确认可用的 `python/3.11.3`，环境位于 `/srv/scratch/$USER/environments/lunar-lander`。setup job 会安装依赖、执行 `pip check` 并验证 Box2D、Gymnasium、Stable-Baselines3 和 PyTorch。可用下面的命令检查 setup 日志：
+默认加载已在账户上确认可用的 `python/3.11.3`，环境位于 `/srv/scratch/$USER/environments/lunar-lander-py311`。setup job 会安装依赖、执行 `pip check` 并验证 Python 3.11、Box2D、Gymnasium、Stable-Baselines3 和 PyTorch。每个训练、evaluation、selection 和 aggregate PBS 都会在 job 内重新加载 module、激活该 venv，并在版本或 venv prefix 不符时立即失败；不依赖登录 shell 的 active 环境。可用下面的命令检查 setup 日志：
 
 ```bash
 qstat -u "$USER"
@@ -38,7 +38,7 @@ tail -n 50 lunar_setup.o*
 环境安装完成后先做快速验证：
 
 ```bash
-source /srv/scratch/$USER/environments/lunar-lander/bin/activate
+source /srv/scratch/$USER/environments/lunar-lander-py311/bin/activate
 pytest -q
 ```
 
@@ -134,7 +134,7 @@ qsub scripts/katana_lunar_v6_select.pbs
 若安装时选择的不是默认 Python module 或 venv 路径，请这样传给作业：
 
 ```bash
-qsub -v PYTHON_MODULE=python/3.11.3,LUNAR_VENV_DIR=/srv/scratch/$USER/environments/lunar-lander scripts/katana_lunar_pilot_train.pbs
+qsub -v PYTHON_MODULE=python/3.11.3,LUNAR_VENV_DIR=/srv/scratch/$USER/environments/lunar-lander-py311 scripts/katana_lunar_pilot_train.pbs
 ```
 
 ## V6 formal freeze and run

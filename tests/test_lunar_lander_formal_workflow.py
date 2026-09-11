@@ -129,3 +129,26 @@ def test_formal_pbs_task_counts_and_sealed_ordering_contract():
     assert "resolve_lunar_checkpoint.py" in held_out
     assert "held_out_high.json" in held_out
     assert "Refusing to overwrite sealed held-out output" in held_out
+
+
+def test_every_compute_pbs_activates_guarded_python311_environment():
+    setup = Path("scripts/katana_lunar_setup.pbs")
+    compute_jobs = [
+        path
+        for path in Path("scripts").glob("katana_lunar_*.pbs")
+        if path != setup
+    ]
+    assert compute_jobs
+    for path in compute_jobs:
+        assert "source scripts/katana_env.sh" in path.read_text(), path
+
+    helper = Path("scripts/katana_env.sh").read_text()
+    setup_helper = Path("scripts/setup_katana_venv.sh").read_text()
+    setup_job = setup.read_text()
+    for text in (helper, setup_helper, setup_job):
+        assert "lunar-lander-py311" in text
+        assert "3.11" in text
+    assert "python -m venv" in setup_helper
+    assert "python3 -m venv" not in setup_helper
+    assert "Wrong Python after venv activation" in helper
+    assert 'os.environ["VIRTUAL_ENV"]' in helper
