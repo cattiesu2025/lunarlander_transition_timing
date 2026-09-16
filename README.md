@@ -176,3 +176,16 @@ bash scripts/submit_katana_v7_formal.sh
 launcher 会立即打印六个 PBS job IDs。任何阶段失败时，后续依赖任务不会启动；尤其只有 selection 成功产生 60/60 checkpoint lock 后，held-out array 才会被释放。稍后只需用 `qstat -u "$USER"` 查看整条链，不需要逐阶段等待和手工提交。
 
 输出根为 `outputs/lunar_lander_braking_formal_v3_persistent_onset/`。主估计仍为 matched-scene seed median 后再跨 20 seeds 取中位数；确认性方向为 `tau_ECON - tau_DESC > 0`。有效制动、首次点火、窗口敏感性、事件率与终局结果同时报告，但不能替换主结果。
+
+### v7 post-freeze, pre-held-out gate amendment
+
+原 v7 selection 在封存 held-out 尚未运行时因 ECON seed 2011 无 checkpoint 同时满足两种干预的 15/18 着陆门槛而退出。原失败记录、freeze bundle 与已训练模型保持不变。`amendment_v7_original_only.md` 记录一项在查看开发集任务质量后、打开 held-out 前作出的修订：60 个模型一律仅按原始开发场景的 `landed >= 15/18`、主事件 `>= 15/18` 选择最新 checkpoint；低速干预仍要求数据完整、无技术错误，并在最终报告中展示所有结果。
+
+在 Katana 上先更新代码，再只提交以下一个恢复命令；它不会重跑训练或 development evaluation，也不会覆盖原 `selection/`：
+
+```bash
+git pull --ff-only
+bash scripts/submit_katana_v7_amended.sh
+```
+
+launcher 自动串联 amended selection → sealed held-out array → amended aggregate。新输出分别写入 `selection_amended_original_only/`、`held_out_eval_amended_original_only/` 和 `aggregate_amended_original_only/`。若 60/60 仍未选齐，held-out 保持封存。论文必须披露原 v7 gate 失败及这次协议偏离，不能把修订后结果写成完全遵循原预注册的分析。

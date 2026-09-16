@@ -92,7 +92,10 @@ def select_models(
     input_dir: Path,
     train_root: Path,
     conditions: tuple[str, ...] = CONDITIONS,
+    gate_interventions: tuple[str, ...] = INTERVENTIONS,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    if not gate_interventions or not set(gate_interventions).issubset(INTERVENTIONS):
+        raise ValueError("gate_interventions must be a non-empty subset of known interventions")
     scenario_ids = [str(row["scenario_id"]) for row in manifest]
     steps = [int(step) for step in config["experiment"]["checkpoint_steps"]]
     seeds = [int(seed) for seed in config["experiment"]["seeds"]]
@@ -148,6 +151,11 @@ def select_models(
                     raise ValueError(
                         f"Incomplete/technical evaluation at {evaluation_dir}: {summary}"
                     )
+                summary["eligible"] = all(
+                    summary[f"{intervention}_landed"] >= minimum_landed
+                    and summary[f"{intervention}_primary_events"] >= minimum_primary_events
+                    for intervention in gate_interventions
+                )
                 summary.update(
                     {
                         "checkpoint_step": step,
@@ -183,6 +191,8 @@ def write_outputs(
     config_hash: str,
     development_manifest_sha256: str,
     freeze_manifest_sha256: str | None,
+    gate_interventions: tuple[str, ...] = INTERVENTIONS,
+    amendment_sha256: str | None = None,
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     with (output_dir / "model_selection.csv").open("w", newline="", encoding="utf-8") as handle:
@@ -190,19 +200,21 @@ def write_outputs(
         writer.writeheader()
         writer.writerows(audit)
     payload = {
-        "schema_version": 2,
+        "schema_version": 3 if amendment_sha256 else 2,
         "selection_rule": "latest_eligible_checkpoint",
         "config_hash": config_hash,
         "development_manifest_sha256": development_manifest_sha256,
         "freeze_manifest_sha256": freeze_manifest_sha256,
         "gate": {
-            "interventions": list(INTERVENTIONS),
+            "interventions": list(gate_interventions),
             "minimum_landed_per_intervention": minimum_landed,
             "minimum_primary_events_per_intervention": minimum_primary_events,
             "uses_onset_time": False,
         },
         "selected_models": selected,
     }
+    if amendment_sha256:
+        payload["amendment_sha256"] = amendment_sha256
     (output_dir / "selected_checkpoints.json").write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )

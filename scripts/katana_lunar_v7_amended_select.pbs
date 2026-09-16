@@ -1,0 +1,19 @@
+#!/bin/bash
+#PBS -N lunar_v7_aselect
+#PBS -l select=1:ncpus=1:mem=4gb
+#PBS -l walltime=01:00:00
+#PBS -j oe
+
+set -euo pipefail
+cd "${PBS_O_WORKDIR:?PBS_O_WORKDIR is required}"
+source scripts/katana_env.sh
+
+root="outputs/lunar_lander_braking_formal_v3_persistent_onset"
+python scripts/select_lunar_v7_amended.py \
+  --config experiments/lunar_lander_braking/configs/formal_v7_persistent_onset.yaml \
+  --manifest experiments/lunar_lander_braking/grids/development_high.json \
+  --freeze-manifest "$root/frozen/manifest.sha256.json" \
+  --amendment experiments/lunar_lander_braking/amendment_v7_original_only.md \
+  --input "$root/development_eval" \
+  --train-root "$root/train" \
+  --output "$root/selection_amended_original_only"

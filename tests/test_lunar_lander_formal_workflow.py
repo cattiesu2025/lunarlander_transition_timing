@@ -113,6 +113,35 @@ def test_resolver_requires_locked_complete_selection_and_matching_checkpoint(tmp
     assert resolve_checkpoint(
         CONFIG, selection, lock, freeze, "DESC", 1001
     ) == checkpoint
+    amendment = tmp_path / "amendment_v7_original_only.md"
+    amendment.write_text("original-only gate\n", encoding="utf-8")
+    amended_selection = tmp_path / "amended_selection.json"
+    amended_payload = {
+        **json.loads(selection.read_text(encoding="utf-8")),
+        "schema_version": 3,
+        "amendment_sha256": file_hash(amendment),
+    }
+    amended_payload["gate"]["interventions"] = ["original"]
+    write_json(amended_selection, amended_payload)
+    amended_lock = tmp_path / "amended_selection.sha256.json"
+    write_json(
+        amended_lock,
+        {
+            "schema_version": 1,
+            "file": amended_selection.name,
+            "sha256": file_hash(amended_selection),
+        },
+    )
+    assert resolve_checkpoint(
+        CONFIG, amended_selection, amended_lock, freeze, "DESC", 1001,
+        amendment,
+    ) == checkpoint
+    amendment.write_text("changed amendment\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="amendment hash mismatch"):
+        resolve_checkpoint(
+            CONFIG, amended_selection, amended_lock, freeze, "DESC", 1001,
+            amendment,
+        )
     selection.write_text(selection.read_text(encoding="utf-8") + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="manifest hash mismatch"):
         resolve_checkpoint(CONFIG, selection, lock, freeze, "DESC", 1001)
@@ -156,6 +185,23 @@ def test_persistent_replication_one_command_launcher_chains_every_stage():
     assert launcher.count("depend=afterok:") == 5
     assert 'depend=afterok:${selection_job}' in launcher
     assert "You may disconnect now" in launcher
+
+
+def test_amended_launcher_resumes_after_development_and_protects_heldout():
+    launcher = Path("scripts/submit_katana_v7_amended.sh").read_text()
+    selection = Path("scripts/katana_lunar_v7_amended_select.pbs").read_text()
+    held_out = Path("scripts/katana_lunar_v7_amended_heldout.pbs").read_text()
+    aggregate = Path("scripts/katana_lunar_v7_amended_aggregate.pbs").read_text()
+    assert launcher.count("depend=afterok:") == 2
+    assert "katana_lunar_v7_amended_select.pbs" in launcher
+    assert "katana_lunar_v7_amended_heldout.pbs" in launcher
+    assert "katana_lunar_v7_amended_aggregate.pbs" in launcher
+    assert "held_out_eval\"" in launcher
+    assert "select_lunar_v7_amended.py" in selection
+    assert "--amendment" in held_out
+    assert "--selection-lock" in held_out
+    assert "--amendment" in aggregate
+    assert "--freeze-manifest" in aggregate
 
 
 def test_every_compute_pbs_activates_guarded_python311_environment():

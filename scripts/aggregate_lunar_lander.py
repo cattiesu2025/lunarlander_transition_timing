@@ -16,7 +16,8 @@ from scipy.stats import binomtest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from experiments.lunar_lander_braking.config import load_config  # noqa: E402
+from experiments.lunar_lander_braking.config import canonical_hash, file_hash, load_config  # noqa: E402
+from experiments.lunar_lander_braking.run import verify_frozen_inputs  # noqa: E402
 
 
 KEY = ["condition", "seed", "scenario_id", "intervention"]
@@ -231,13 +232,73 @@ def main() -> None:
     parser.add_argument("--manifest", required=True)
     parser.add_argument("--input", required=True, help="Directory recursively containing episodes.jsonl")
     parser.add_argument("--output", required=True)
+    parser.add_argument("--amendment", help="Documented post-freeze amendment")
+    parser.add_argument("--selection", help="Amended selected-checkpoint manifest")
+    parser.add_argument("--selection-lock", help="SHA-256 lock for amended selection")
+    parser.add_argument("--freeze-manifest", help="Original freeze manifest for amended aggregate")
     args = parser.parse_args()
+    if any((args.amendment, args.selection, args.selection_lock, args.freeze_manifest)):
+        if not all((args.amendment, args.selection, args.selection_lock, args.freeze_manifest)):
+            raise SystemExit("Amended aggregate requires amendment, selection, selection lock, and freeze manifest")
+        selection_path = Path(args.selection)
+        lock = json.loads(Path(args.selection_lock).read_text(encoding="utf-8"))
+        selection = json.loads(selection_path.read_text(encoding="utf-8"))
+        if lock.get("file") != selection_path.name or lock.get("sha256") != file_hash(selection_path):
+            raise ValueError("Amended selection lock mismatch")
+        if selection.get("schema_version") != 3 or selection.get("amendment_sha256") != file_hash(args.amendment):
+            raise ValueError("Amended selection/protocol mismatch")
+        if selection.get("freeze_manifest_sha256") != file_hash(args.freeze_manifest):
+            raise ValueError("Amended selection/freeze manifest mismatch")
+        verify_frozen_inputs(args.freeze_manifest, [args.config, args.manifest])
     config = load_config(args.config)
+    if args.amendment:
+        frozen = json.loads(Path(args.freeze_manifest).read_text(encoding="utf-8"))
+        if selection.get("development_manifest_sha256") != frozen.get("files", {}).get(
+            "development_high.json"
+        ):
+            raise ValueError("Amended selection/development manifest mismatch")
+        if selection.get("selection_rule") != "latest_eligible_checkpoint":
+            raise ValueError("Amended selection rule mismatch")
+        if selection.get("gate") != {
+            "interventions": ["original"],
+            "minimum_landed_per_intervention": config["selection"]["minimum_landed_per_intervention"],
+            "minimum_primary_events_per_intervention": config["selection"]["minimum_primary_events_per_intervention"],
+            "uses_onset_time": False,
+        }:
+            raise ValueError("Amended selection gate mismatch")
+        if selection.get("config_hash") != canonical_hash(config):
+            raise ValueError("Amended selection/config hash mismatch")
+        expected = {
+            (condition, int(seed))
+            for condition in ("DESC", "BAL", "ECON")
+            for seed in config["experiment"]["seeds"]
+        }
+        selected = selection.get("selected_models", [])
+        keys = [(row["condition"], int(row["seed"])) for row in selected]
+        if len(keys) != len(expected) or set(keys) != expected:
+            raise ValueError("Amended selection is incomplete or duplicated")
     with Path(args.manifest).open(encoding="utf-8") as handle:
         manifest = json.load(handle)
     paths = sorted(Path(args.input).rglob("episodes.jsonl"))
     frame = read_jsonl(paths)
+    if args.amendment:
+        expected_hashes = {
+            (row["condition"], int(row["seed"])): row["checkpoint_sha256"]
+            for row in selected
+        }
+        for row in frame.to_dict("records"):
+            if row.get("checkpoint_sha256") != expected_hashes.get(
+                (row["condition"], int(row["seed"]))
+            ):
+                raise ValueError("Amended held-out episode/checkpoint hash mismatch")
     summary, contrasts = aggregate(config, manifest, frame)
+    if args.amendment:
+        summary["protocol_amendment"] = {
+            "file": Path(args.amendment).name,
+            "sha256": file_hash(args.amendment),
+            "selection_manifest_sha256": file_hash(args.selection),
+            "status": "post-freeze, pre-held-out gate amendment",
+        }
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
     (output / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")

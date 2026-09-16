@@ -36,6 +36,7 @@ def resolve_checkpoint(
     freeze_manifest_path: str | Path,
     condition: str,
     seed: int,
+    amendment_path: str | Path | None = None,
 ) -> Path:
     config = load_config(config_path)
     selection_path = Path(selection_path)
@@ -47,8 +48,11 @@ def resolve_checkpoint(
 
     verify_frozen_inputs(freeze_manifest_path, [config_path])
     payload = _load_json(selection_path)
-    if payload.get("schema_version") != 2:
+    amended = amendment_path is not None
+    if payload.get("schema_version") != (3 if amended else 2):
         raise ValueError("Unsupported selected-checkpoint manifest schema")
+    if amended and payload.get("amendment_sha256") != file_hash(amendment_path):
+        raise ValueError("Selection/amendment hash mismatch")
     if payload.get("selection_rule") != "latest_eligible_checkpoint":
         raise ValueError("Unexpected selection rule")
     if payload.get("config_hash") != canonical_hash(config):
@@ -60,7 +64,7 @@ def resolve_checkpoint(
     if payload.get("development_manifest_sha256") != frozen_development_hash:
         raise ValueError("Selection/development-manifest hash mismatch")
     if payload.get("gate") != {
-        "interventions": config["selection"]["interventions"],
+        "interventions": ["original"] if amended else config["selection"]["interventions"],
         "minimum_landed_per_intervention": config["selection"][
             "minimum_landed_per_intervention"
         ],
@@ -117,6 +121,7 @@ def main() -> None:
     parser.add_argument("--selection", required=True)
     parser.add_argument("--selection-lock", required=True)
     parser.add_argument("--freeze-manifest", required=True)
+    parser.add_argument("--amendment", help="Required for a schema-3 amended selection")
     parser.add_argument("--condition", choices=CONDITIONS, required=True)
     parser.add_argument("--seed", type=int, required=True)
     args = parser.parse_args()
@@ -127,6 +132,7 @@ def main() -> None:
         args.freeze_manifest,
         args.condition,
         args.seed,
+        args.amendment,
     )
     print(checkpoint)
 
