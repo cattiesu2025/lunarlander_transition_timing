@@ -189,3 +189,5 @@ bash scripts/submit_katana_v7_amended.sh
 ```
 
 launcher 自动串联 amended selection → sealed held-out array → amended aggregate。新输出分别写入 `selection_amended_original_only/`、`held_out_eval_amended_original_only/` 和 `aggregate_amended_original_only/`。若 60/60 仍未选齐，held-out 保持封存。论文必须披露原 v7 gate 失败及这次协议偏离，不能把修订后结果写成完全遵循原预注册的分析。
+
+本地同步完成后的主结果、窗口敏感性、低速干预、有效制动及终局结果整理见 `experiments/lunar_lander_braking/results_v7_amended.md`。使用 `scripts/summarize_lunar_v7_amended.py` 可从 held-out episode 记录复算描述性补充检查。
