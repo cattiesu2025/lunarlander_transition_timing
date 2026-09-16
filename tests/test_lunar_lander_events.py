@@ -1,5 +1,7 @@
 import pytest
 
+from experiments.lunar_lander_braking.run import detect_primary
+
 from experiments.lunar_lander_braking.events import (
     DetectorConfig,
     detect_first_fire,
@@ -52,3 +54,14 @@ def test_contact_and_incomplete_windows_are_rejected():
 def test_window_must_be_integral_number_of_steps():
     with pytest.raises(ValueError):
         DetectorConfig(window_s=0.31)
+
+
+def test_persistent_fire_can_be_primary_without_motion_threshold():
+    rows = records([2] * 9 + [0] * 6, gain_per_step=-0.01)
+    detector = DetectorConfig(
+        window_s=0.30, firing_fraction=0.60, epsilon_v=0.40
+    )
+    effective_config = {"detector": {"primary_endpoint": "effective_braking"}}
+    persistent_config = {"detector": {"primary_endpoint": "sustained_fire"}}
+    assert not detect_primary(rows, effective_config, detector).observed
+    assert detect_primary(rows, persistent_config, detector).observed

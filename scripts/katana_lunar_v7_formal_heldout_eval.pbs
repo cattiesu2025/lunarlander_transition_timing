@@ -1,0 +1,39 @@
+#!/bin/bash
+#PBS -N lunar_v7_fheld
+#PBS -J 0-59
+#PBS -l select=1:ncpus=2:mem=8gb
+#PBS -l walltime=04:00:00
+#PBS -j oe
+
+set -euo pipefail
+cd "${PBS_O_WORKDIR:?PBS_O_WORKDIR is required}"
+source scripts/katana_env.sh
+
+conditions=(DESC BAL ECON)
+seeds=(2001 2002 2003 2004 2005 2006 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 2017 2018 2019 2020)
+condition_index=$((PBS_ARRAY_INDEX / 20))
+seed_index=$((PBS_ARRAY_INDEX % 20))
+condition="${conditions[$condition_index]}"
+seed="${seeds[$seed_index]}"
+root="outputs/lunar_lander_braking_formal_v3_persistent_onset"
+output="$root/held_out_eval/$condition/seed_${seed}"
+
+if [[ -e "$output" ]]; then
+  echo "Refusing to overwrite sealed held-out output: $output" >&2
+  exit 1
+fi
+
+checkpoint=$(python scripts/resolve_lunar_checkpoint.py \
+  --config experiments/lunar_lander_braking/configs/formal_v7_persistent_onset.yaml \
+  --selection "$root/selection/selected_checkpoints.json" \
+  --selection-lock "$root/selection/selected_checkpoints.sha256.json" \
+  --freeze-manifest "$root/frozen/manifest.sha256.json" \
+  --condition "$condition" --seed "$seed")
+
+python -m experiments.lunar_lander_braking.run evaluate \
+  --config experiments/lunar_lander_braking/configs/formal_v7_persistent_onset.yaml \
+  --manifest experiments/lunar_lander_braking/grids/held_out_persistent_v7.json \
+  --freeze-manifest "$root/frozen/manifest.sha256.json" \
+  --condition "$condition" --seed "$seed" \
+  --checkpoint "$checkpoint" \
+  --output "$output"

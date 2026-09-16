@@ -21,10 +21,16 @@ V6_HIGH_CONFIG = Path("experiments/lunar_lander_braking/configs/pilot_v6_high_la
 FORMAL_V6_HIGH_CONFIG = Path(
     "experiments/lunar_lander_braking/configs/formal_v6_high_latest.yaml"
 )
+FORMAL_V7_PERSISTENT_CONFIG = Path(
+    "experiments/lunar_lander_braking/configs/formal_v7_persistent_onset.yaml"
+)
 DEVELOPMENT = Path("experiments/lunar_lander_braking/grids/development.json")
 DEVELOPMENT_HIGH = Path("experiments/lunar_lander_braking/grids/development_high.json")
 HELD_OUT = Path("experiments/lunar_lander_braking/grids/held_out.json")
 HELD_OUT_HIGH = Path("experiments/lunar_lander_braking/grids/held_out_high.json")
+HELD_OUT_PERSISTENT = Path(
+    "experiments/lunar_lander_braking/grids/held_out_persistent_v7.json"
+)
 
 
 def test_manifests_are_complete_and_axes_do_not_overlap():
@@ -196,6 +202,31 @@ def test_formal_v6_promotes_pilot_contract_without_method_changes():
         },
     }
     assert formal == expected
+
+
+def test_persistent_onset_replication_is_independent_and_explicit():
+    config = load_config(FORMAL_V7_PERSISTENT_CONFIG)
+    replication = load_manifest(HELD_OUT_PERSISTENT)
+    development = load_manifest(DEVELOPMENT_HIGH)
+    prior_held_out = load_manifest(HELD_OUT_HIGH)
+    assert config["experiment"]["seeds"] == list(range(2001, 2021))
+    assert config["detector"]["primary_endpoint"] == "sustained_fire"
+    assert len(replication) == 18
+    for field in (
+        "height_above_pad", "vy", "x_offset", "terrain_seed", "noise_seed"
+    ):
+        replication_values = {row[field] for row in replication}
+        assert replication_values.isdisjoint(row[field] for row in development)
+        assert replication_values.isdisjoint(row[field] for row in prior_held_out)
+
+
+def test_config_rejects_unknown_primary_endpoint(tmp_path):
+    config = yaml.safe_load(FORMAL_V7_PERSISTENT_CONFIG.read_text(encoding="utf-8"))
+    config["detector"]["primary_endpoint"] = "largest_observed_difference"
+    path = tmp_path / "config.yaml"
+    path.write_text(yaml.safe_dump(config), encoding="utf-8")
+    with pytest.raises(ValueError, match="primary_endpoint"):
+        load_config(path)
 
 
 @pytest.mark.parametrize(

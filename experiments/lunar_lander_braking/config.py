@@ -71,6 +71,13 @@ def load_config(path: str | Path) -> dict[str, Any]:
             raise ValueError(f"reward.{field} must be a positive number")
     if int(config["experiment"].get("action_repeat", 1)) != 1:
         raise ValueError("Protocol v1 requires action_repeat=1")
+    primary_endpoint = config["detector"].get(
+        "primary_endpoint", "effective_braking"
+    )
+    if primary_endpoint not in {"effective_braking", "sustained_fire"}:
+        raise ValueError(
+            "detector.primary_endpoint must be effective_braking or sustained_fire"
+        )
     agent = config["agent"]
     if agent.get("framework") != "stable_baselines3":
         raise ValueError("agent.framework must be stable_baselines3")

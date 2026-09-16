@@ -40,6 +40,20 @@ def detector_configs(config: dict[str, Any]) -> dict[str, DetectorConfig]:
     return values
 
 
+def detect_primary(
+    records: list[dict[str, Any]],
+    config: dict[str, Any],
+    detector_config: DetectorConfig,
+):
+    """Apply the endpoint named as primary in the frozen experiment config."""
+    endpoint = config["detector"].get(
+        "primary_endpoint", "effective_braking"
+    )
+    if endpoint == "sustained_fire":
+        return detect_sustained_fire(records, detector_config)
+    return detect_onset(records, detector_config)
+
+
 def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
@@ -56,7 +70,8 @@ def command_freeze(args: argparse.Namespace) -> None:
         raise SystemExit(
             "Formal freeze requires --pip-lock and either --conda-lock or --python-lock"
         )
-    inputs = [args.development_manifest, args.held_out_manifest, PACKAGE / "protocol.md"]
+    protocol = Path(args.protocol) if args.protocol else PACKAGE / "protocol.md"
+    inputs = [args.development_manifest, args.held_out_manifest, protocol]
     project_root = PACKAGE.parents[1]
     inputs.extend((project_root / "environment.yml", project_root / "requirements.txt"))
     if args.conda_lock:
@@ -111,15 +126,30 @@ def _evaluate_rollout(
     )
     env.close()
     configs = detector_configs(config)
-    primary = detect_onset(result["records"], configs["primary"])
+    effective_braking = detect_onset(result["records"], configs["primary"])
+    sustained_fire = detect_sustained_fire(result["records"], configs["primary"])
+    primary_endpoint = config["detector"].get(
+        "primary_endpoint", "effective_braking"
+    )
+    primary = detect_primary(result["records"], config, configs["primary"])
     detectors: dict[str, Any] = {
         "primary": primary.to_dict(),
         "first_fire": detect_first_fire(result["records"]).to_dict(),
-        "sustained_fire": detect_sustained_fire(result["records"], configs["primary"]).to_dict(),
+        "sustained_fire": sustained_fire.to_dict(),
+        "effective_braking": effective_braking.to_dict(),
     }
     for label, detector_config in configs.items():
         if label != "primary":
-            detectors[label] = detect_onset(result["records"], detector_config).to_dict()
+            detector = (
+                detect_sustained_fire(result["records"], detector_config)
+                if primary_endpoint == "sustained_fire"
+                else detect_onset(result["records"], detector_config)
+            )
+            detectors[label] = detector.to_dict()
+            if primary_endpoint == "sustained_fire":
+                detectors[f"effective_braking_{label}"] = detect_onset(
+                    result["records"], detector_config
+                ).to_dict()
     trajectory = output / "trajectories" / f"{scenario.scenario_id}_{intervention}.jsonl.gz"
     trajectory.parent.mkdir(parents=True, exist_ok=True)
     with gzip.open(trajectory, "wt", encoding="utf-8") as handle:
@@ -222,7 +252,7 @@ def command_probe(args: argparse.Namespace) -> None:
             env = make_env(config, "BAL")
             result = rollout(env, scenario, policy)
             env.close()
-            detection = detect_onset(result["records"], primary_config)
+            detection = detect_primary(result["records"], config, primary_config)
             window = result["records"][: primary_config.window_steps]
             window_reduction = None
             if len(window) == primary_config.window_steps:
@@ -290,7 +320,7 @@ def command_recoverability(args: argparse.Namespace) -> None:
         env = make_env(config, "BAL")
         result = rollout(env, scenario, reference_policy)
         env.close()
-        detection = detect_onset(result["records"], primary_config)
+        detection = detect_primary(result["records"], config, primary_config)
         rows.append({
             "scenario_id": scenario.scenario_id,
             "outcome": result["outcome"],
@@ -324,6 +354,10 @@ def build_parser() -> argparse.ArgumentParser:
     freeze.add_argument("--config", default=common_config)
     freeze.add_argument("--development-manifest", default=common_manifest)
     freeze.add_argument("--held-out-manifest", default=str(PACKAGE / "grids" / "held_out.json"))
+    freeze.add_argument(
+        "--protocol",
+        help="Protocol file to seal; defaults to the original powered-braking protocol.",
+    )
     freeze.add_argument("--output", required=True)
     freeze.add_argument("--confirm-calibrated", action="store_true")
     freeze.add_argument("--conda-lock", help="Output of `conda list --explicit`")

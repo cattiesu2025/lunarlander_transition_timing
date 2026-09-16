@@ -162,3 +162,17 @@ qsub scripts/katana_lunar_v6_formal_aggregate.pbs
 输出根为 `outputs/lunar_lander_braking_formal_v2_high_latest/`。正式 train/development/held-out 输出和 selection/aggregate 均拒绝静默覆盖。若某个 task 因技术错误失败，先保存错误证据并明确清理该 task 的精确输出目录，再用相同 frozen inputs 重跑；不得因行为结果调整 seed、checkpoint 或场景。
 
 Aggregate 输出 `summary.json` 与 `seed_contrasts.csv`。缺 episode、重复键、unexpected row、技术错误或任一 seed 少于 12/18 个 DESC/ECON 共同事件时，确认性 bootstrap 和 sign test 不会计算。
+
+## Persistent-action ONSET confirmatory replication
+
+为与 highway 实验的“持续目标行为开始时间”保持同一 paper-level construct，独立复验将 `sustained_fire` 指定为 LunarLander 主 ONSET。原来的点火加净减速端点保留为 `effective_braking` 物理效果验证。复验使用新的训练 seeds 2001–2020 和未使用过的 sealed held-out 参数轴及环境 seeds；先前 formal v2 数据不进入复验估计。完整预注册见 `experiments/lunar_lander_braking/protocol_persistent_onset.md`。
+
+在 Katana 登录节点运行一次 launcher；它会用 PBS `afterok` 自动串联全部阶段，提交完成后可以直接断开登录：
+
+```bash
+bash scripts/submit_katana_v7_formal.sh
+```
+
+launcher 会立即打印六个 PBS job IDs。任何阶段失败时，后续依赖任务不会启动；尤其只有 selection 成功产生 60/60 checkpoint lock 后，held-out array 才会被释放。稍后只需用 `qstat -u "$USER"` 查看整条链，不需要逐阶段等待和手工提交。
+
+输出根为 `outputs/lunar_lander_braking_formal_v3_persistent_onset/`。主估计仍为 matched-scene seed median 后再跨 20 seeds 取中位数；确认性方向为 `tau_ECON - tau_DESC > 0`。有效制动、首次点火、窗口敏感性、事件率与终局结果同时报告，但不能替换主结果。

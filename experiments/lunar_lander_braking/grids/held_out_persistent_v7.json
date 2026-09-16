@@ -1,0 +1,200 @@
+[
+  {
+    "scenario_id": "rephigh_h084_v11_xm",
+    "height_above_pad": 8.4,
+    "vx": 0.0,
+    "vy": -1.1,
+    "x_offset": -0.3,
+    "angle": 0.0,
+    "angular_velocity": 0.0,
+    "terrain_seed": 7101,
+    "noise_seed": 8101
+  },
+  {
+    "scenario_id": "rephigh_h084_v11_xp",
+    "height_above_pad": 8.4,
+    "vx": 0.0,
+    "vy": -1.1,
+    "x_offset": 0.3,
+    "angle": 0.0,
+    "angular_velocity": 0.0,
+    "terrain_seed": 7102,
+    "noise_seed": 8102
+  },
+  {
+    "scenario_id": "rephigh_h084_v19_xm",
+    "height_above_pad": 8.4,
+    "vx": 0.0,
+    "vy": -1.9,
+    "x_offset": -0.3,
+    "angle": 0.0,
+    "angular_velocity": 0.0,
+    "terrain_seed": 7103,
+    "noise_seed": 8103
+  },
+  {
+    "scenario_id": "rephigh_h084_v19_xp",
+    "height_above_pad": 8.4,
+    "vx": 0.0,
+    "vy": -1.9,
+    "x_offset": 0.3,
+    "angle": 0.0,
+    "angular_velocity": 0.0,
+    "terrain_seed": 7104,
+    "noise_seed": 8104
+  },
+  {
+    "scenario_id": "rephigh_h084_v23_xm",
+    "height_above_pad": 8.4,
+    "vx": 0.0,
+    "vy": -2.3,
+    "x_offset": -0.3,
+    "angle": 0.0,
+    "angular_velocity": 0.0,
+    "terrain_seed": 7105,
+    "noise_seed": 8105
+  },
+  {
+    "scenario_id": "rephigh_h084_v23_xp",
+    "height_above_pad": 8.4,
+    "vx": 0.0,
+    "vy": -2.3,
+    "x_offset": 0.3,
+    "angle": 0.0,
+    "angular_velocity": 0.0,
+    "terrain_seed": 7106,
+    "noise_seed": 8106
+  },
+  {
+    "scenario_id": "rephigh_h096_v11_xm",
+    "height_above_pad": 9.6,
+    "vx": 0.0,
+    "vy": -1.1,
+    "x_offset": -0.3,
+    "angle": 0.0,
+    "angular_velocity": 0.0,
+    "terrain_seed": 7107,
+    "noise_seed": 8107
+  },
+  {
+    "scenario_id": "rephigh_h096_v11_xp",
+    "height_above_pad": 9.6,
+    "vx": 0.0,
+    "vy": -1.1,
+    "x_offset": 0.3,
+    "angle": 0.0,
+    "angular_velocity": 0.0,
+    "terrain_seed": 7108,
+    "noise_seed": 8108
+  },
+  {
+    "scenario_id": "rephigh_h096_v19_xm",
+    "height_above_pad": 9.6,
+    "vx": 0.0,
+    "vy": -1.9,
+    "x_offset": -0.3,
+    "angle": 0.0,
+    "angular_velocity": 0.0,
+    "terrain_seed": 7109,
+    "noise_seed": 8109
+  },
+  {
+    "scenario_id": "rephigh_h096_v19_xp",
+    "height_above_pad": 9.6,
+    "vx": 0.0,
+    "vy": -1.9,
+    "x_offset": 0.3,
+    "angle": 0.0,
+    "angular_velocity": 0.0,
+    "terrain_seed": 7110,
+    "noise_seed": 8110
+  },
+  {
+    "scenario_id": "rephigh_h096_v23_xm",
+    "height_above_pad": 9.6,
+    "vx": 0.0,
+    "vy": -2.3,
+    "x_offset": -0.3,
+    "angle": 0.0,
+    "angular_velocity": 0.0,
+    "terrain_seed": 7111,
+    "noise_seed": 8111
+  },
+  {
+    "scenario_id": "rephigh_h096_v23_xp",
+    "height_above_pad": 9.6,
+    "vx": 0.0,
+    "vy": -2.3,
+    "x_offset": 0.3,
+    "angle": 0.0,
+    "angular_velocity": 0.0,
+    "terrain_seed": 7112,
+    "noise_seed": 8112
+  },
+  {
+    "scenario_id": "rephigh_h114_v11_xm",
+    "height_above_pad": 11.4,
+    "vx": 0.0,
+    "vy": -1.1,
+    "x_offset": -0.3,
+    "angle": 0.0,
+    "angular_velocity": 0.0,
+    "terrain_seed": 7113,
+    "noise_seed": 8113
+  },
+  {
+    "scenario_id": "rephigh_h114_v11_xp",
+    "height_above_pad": 11.4,
+    "vx": 0.0,
+    "vy": -1.1,
+    "x_offset": 0.3,
+    "angle": 0.0,
+    "angular_velocity": 0.0,
+    "terrain_seed": 7114,
+    "noise_seed": 8114
+  },
+  {
+    "scenario_id": "rephigh_h114_v19_xm",
+    "height_above_pad": 11.4,
+    "vx": 0.0,
+    "vy": -1.9,
+    "x_offset": -0.3,
+    "angle": 0.0,
+    "angular_velocity": 0.0,
+    "terrain_seed": 7115,
+    "noise_seed": 8115
+  },
+  {
+    "scenario_id": "rephigh_h114_v19_xp",
+    "height_above_pad": 11.4,
+    "vx": 0.0,
+    "vy": -1.9,
+    "x_offset": 0.3,
+    "angle": 0.0,
+    "angular_velocity": 0.0,
+    "terrain_seed": 7116,
+    "noise_seed": 8116
+  },
+  {
+    "scenario_id": "rephigh_h114_v23_xm",
+    "height_above_pad": 11.4,
+    "vx": 0.0,
+    "vy": -2.3,
+    "x_offset": -0.3,
+    "angle": 0.0,
+    "angular_velocity": 0.0,
+    "terrain_seed": 7117,
+    "noise_seed": 8117
+  },
+  {
+    "scenario_id": "rephigh_h114_v23_xp",
+    "height_above_pad": 11.4,
+    "vx": 0.0,
+    "vy": -2.3,
+    "x_offset": 0.3,
+    "angle": 0.0,
+    "angular_velocity": 0.0,
+    "terrain_seed": 7118,
+    "noise_seed": 8118
+  }
+]

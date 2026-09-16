@@ -207,6 +207,9 @@ def aggregate(config: dict[str, Any], manifest: list[dict[str, Any]], frame: pd.
     summary = {
         "schema_version": 1,
         "analysis_phase": config["experiment"].get("phase", "unspecified"),
+        "primary_endpoint": config.get("detector", {}).get(
+            "primary_endpoint", "effective_braking"
+        ),
         "confirmatory_eligible_phase": formal_phase,
         "integrity": integrity,
         "all_seeds_estimable": all_seeds_estimable,

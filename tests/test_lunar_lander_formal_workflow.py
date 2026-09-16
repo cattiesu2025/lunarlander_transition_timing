@@ -131,6 +131,33 @@ def test_formal_pbs_task_counts_and_sealed_ordering_contract():
     assert "Refusing to overwrite sealed held-out output" in held_out
 
 
+def test_persistent_replication_pbs_uses_new_seeds_grid_and_protocol():
+    train = Path("scripts/katana_lunar_v7_formal_train.pbs").read_text()
+    development = Path("scripts/katana_lunar_v7_formal_dev_eval.pbs").read_text()
+    held_out = Path("scripts/katana_lunar_v7_formal_heldout_eval.pbs").read_text()
+    freeze = Path("scripts/katana_lunar_v7_formal_freeze.pbs").read_text()
+    assert "#PBS -J 0-59" in train
+    assert "#PBS -J 0-299" in development
+    assert "#PBS -J 0-59" in held_out
+    for script in (train, development, held_out):
+        assert "2001 2002" in script
+        assert "formal_v7_persistent_onset.yaml" in script
+    assert "held_out_persistent_v7.json" in held_out
+    assert "protocol_persistent_onset.md" in freeze
+
+
+def test_persistent_replication_one_command_launcher_chains_every_stage():
+    launcher = Path("scripts/submit_katana_v7_formal.sh").read_text()
+    stages = [
+        "freeze", "train", "dev_eval", "select", "heldout_eval", "aggregate"
+    ]
+    positions = [launcher.index(f"katana_lunar_v7_formal_{stage}.pbs") for stage in stages]
+    assert positions == sorted(positions)
+    assert launcher.count("depend=afterok:") == 5
+    assert 'depend=afterok:${selection_job}' in launcher
+    assert "You may disconnect now" in launcher
+
+
 def test_every_compute_pbs_activates_guarded_python311_environment():
     setup = Path("scripts/katana_lunar_setup.pbs")
     compute_jobs = [
