@@ -2,7 +2,7 @@ import json
 import math
 import unittest
 
-from scripts.lunar_tilt_extension import BASE_GRID, build_grid, posture_summary
+from scripts.lunar_v7_tilt_extension import BASE_GRID, build_grid, posture_summary
 
 
 class TiltExtensionTests(unittest.TestCase):

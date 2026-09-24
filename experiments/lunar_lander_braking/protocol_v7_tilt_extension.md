@@ -1,4 +1,4 @@
-# Initial-tilt extension
+# v7 initial-tilt extension
 
 This is a post-result exploratory extension of the amended v7 study. The original
 held-out results have already been inspected. This is not a new independent
@@ -48,14 +48,14 @@ ONSET measures sustained main-engine action, not guaranteed net deceleration.
 From the repository root, on the machine holding the selected model files:
 
 ```sh
-python scripts/lunar_tilt_extension.py prepare
-qsub scripts/katana_lunar_tilt_eval.pbs
+python scripts/lunar_v7_tilt_extension.py prepare
+qsub scripts/katana_lunar_v7_tilt_eval.pbs
 ```
 
-For one model, use `python scripts/lunar_tilt_extension.py evaluate --condition
+For one model, use `python scripts/lunar_v7_tilt_extension.py evaluate --condition
 DESC --seed 2001`. Preparation locks the config, scenario grid, protocol, runner,
 original freeze, amendment, and selected-model manifests before evaluation.
 Checkpoint resolution verifies the original selection and model hashes. Results
-go to `outputs/lunar_lander_braking_formal_v3_persistent_onset/tilt_extension/`.
+go to `outputs/lunar_lander_braking_formal_v3_persistent_onset/v7_tilt_extension/`.
 Preparation and evaluation refuse existing destinations. A partial failed run
 must be inspected before deliberately moving its output aside and retrying.

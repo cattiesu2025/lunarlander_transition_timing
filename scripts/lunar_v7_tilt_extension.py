@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare and evaluate a post-result, matched initial-tilt extension."""
+"""Prepare and evaluate the post-result v7 matched initial-tilt extension."""
 
 import argparse
 import gzip
@@ -12,10 +12,10 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 STUDY = Path('outputs/lunar_lander_braking_formal_v3_persistent_onset')
-EXTENSION = STUDY / 'tilt_extension'
+EXTENSION = STUDY / 'v7_tilt_extension'
 CONFIG = Path('experiments/lunar_lander_braking/configs/formal_v7_persistent_onset.yaml')
 BASE_GRID = Path('experiments/lunar_lander_braking/grids/held_out_persistent_v7.json')
-PROTOCOL = Path('experiments/lunar_lander_braking/protocol_tilt_extension.md')
+PROTOCOL = Path('experiments/lunar_lander_braking/protocol_v7_tilt_extension.md')
 SELECTION = STUDY / 'selection_amended_original_only/selected_checkpoints.json'
 SELECTION_LOCK = SELECTION.with_name('selected_checkpoints.sha256.json')
 FREEZE = STUDY / 'frozen/manifest.sha256.json'
@@ -53,7 +53,8 @@ def prepare():
     write_json(manifest, grid)
     hashes[str(manifest)] = sha(manifest)
     write_json(EXTENSION / 'manifest.sha256.json', {
-        'status': 'post-result exploratory extension; not the original held-out study',
+        'study_version': 'v7',
+        'status': 'post-result exploratory v7 extension; not the original held-out study',
         'files': {CONFIG.name: sha(CONFIG), manifest.name: sha(manifest)},
         'source_files': hashes,
     })

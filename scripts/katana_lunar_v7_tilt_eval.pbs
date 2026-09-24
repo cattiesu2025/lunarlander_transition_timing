@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -N lunar_tilt
+#PBS -N lunar_v7_tilt
 #PBS -J 0-59
 #PBS -l select=1:ncpus=2:mem=8gb
 #PBS -l walltime=12:00:00
@@ -12,4 +12,4 @@ conditions=(DESC BAL ECON)
 index=${PBS_ARRAY_INDEX:?PBS_ARRAY_INDEX is required}
 condition="${conditions[$((index / 20))]}"
 seed=$((2001 + index % 20))
-python scripts/lunar_tilt_extension.py evaluate --condition "$condition" --seed "$seed"
+python scripts/lunar_v7_tilt_extension.py evaluate --condition "$condition" --seed "$seed"
