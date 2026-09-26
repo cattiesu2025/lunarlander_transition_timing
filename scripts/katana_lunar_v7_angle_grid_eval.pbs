@@ -1,0 +1,15 @@
+#!/bin/bash
+#PBS -N lunar_v7_grid
+#PBS -J 0-59
+#PBS -l select=1:ncpus=2:mem=8gb
+#PBS -l walltime=24:00:00
+#PBS -j oe
+
+set -euo pipefail
+cd "${PBS_O_WORKDIR:?PBS_O_WORKDIR is required}"
+source scripts/katana_env.sh
+conditions=(DESC BAL ECON)
+index=${PBS_ARRAY_INDEX:?PBS_ARRAY_INDEX is required}
+condition="${conditions[$((index / 20))]}"
+seed=$((2001 + index % 20))
+python scripts/lunar_v7_angle_grid_extension.py evaluate --condition "$condition" --seed "$seed"

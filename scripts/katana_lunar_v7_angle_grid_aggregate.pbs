@@ -1,0 +1,10 @@
+#!/bin/bash
+#PBS -N lunar_v7_grid_agg
+#PBS -l select=1:ncpus=2:mem=16gb
+#PBS -l walltime=02:00:00
+#PBS -j oe
+
+set -euo pipefail
+cd "${PBS_O_WORKDIR:?PBS_O_WORKDIR is required}"
+source scripts/katana_env.sh
+python scripts/lunar_v7_angle_grid_extension.py aggregate
